@@ -2,6 +2,7 @@ const slugify = require("@sindresorhus/slugify");
 const markdownIt = require("markdown-it");
 const fs = require("fs");
 const matter = require("gray-matter");
+const crypto = require("crypto");
 const faviconsPlugin = require("eleventy-plugin-gen-favicons");
 const tocPlugin = require("eleventy-plugin-nesting-toc");
 const { parse } = require("node-html-parser");
@@ -45,7 +46,42 @@ function getAnchorAttributes(filePath, linkTitle) {
 
   let noteIcon = process.env.NOTE_ICON_DEFAULT;
   const title = linkTitle ? linkTitle : fileName;
-  let permalink = `/notes/${slugify(filePath)}`;
+  // Default internal note URL should be derived from the note file name
+  // (not the raw link string). Otherwise links like `[[002-ai.md|...]]`
+  // incorrectly become `/notes/002-ai-md/`.
+  const fileBaseName = (() => {
+    let n = fileName.trim();
+    if (n.endsWith(".md")) n = n.slice(0, -3);
+    if (n.endsWith(".markdown")) n = n.slice(0, -9);
+    if (n.endsWith(".canvas")) n = n.slice(0, -7);
+    return n;
+  })();
+  function shortHash(input) {
+    return crypto
+      .createHash("sha1")
+      .update(String(input))
+      .digest("hex")
+      .slice(0, 8);
+  }
+  function segmentToSlug(segment) {
+    const raw = String(segment || "").trim();
+    const base = slugify(raw, { separator: "-", lowercase: true });
+    const numericPrefix = (raw.match(/^\d+(?:\.\d+)*/) || [null])[0];
+    let out = base || numericPrefix || "note";
+    const hasNonAscii = /[^\x00-\x7F]/.test(raw);
+    const needsHash = hasNonAscii || !base || base.length < 3 || raw.length > 40;
+    if (needsHash) out = `${out}-${shortHash(raw)}`;
+    if (out.length > 60) out = `${out.slice(0, 50)}-${shortHash(raw)}`;
+    return out;
+  }
+  function relPathToPermalinkPath(relPath) {
+    return String(relPath || "")
+      .split("/")
+      .filter(Boolean)
+      .map(segmentToSlug)
+      .join("/");
+  }
+  let permalink = `/notes/${relPathToPermalinkPath(fileBaseName)}/`;
   let deadLink = false;
   try {
     const startPath = "./src/site/notes/";
