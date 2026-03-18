@@ -94,9 +94,39 @@ function getAnchorAttributes(filePath, linkTitle) {
   }
 }
 
+const path = require("path");
+
 const tagRegex = /(^|\s|\>)(#[^\s!@#$%^&*()=+\.,\[{\]};:'"?><]+)(?!([^<]*>))/g;
 
 const markdownFileTypeRegex = /\.(md|markdown)$/i;
+
+// Obsidian 图片语法 ![[filename]] 或 ![[filename|width]]
+const obsidianImageRegex = /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+
+const NOTES_ROOT = "./src/site/notes/";
+const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"];
+
+function resolveObsidianImagePath(inputPath, imageFileName) {
+  if (!inputPath || !isMarkdownPage(inputPath)) return null;
+  const ext = path.extname(imageFileName).toLowerCase();
+  if (!IMAGE_EXTENSIONS.includes(ext) && ext !== "") return null;
+  const noteDir = path.dirname(path.resolve(inputPath));
+  const notesRootAbs = path.resolve(NOTES_ROOT);
+
+  const candidates = [
+    path.join(noteDir, imageFileName),
+    path.join(noteDir, "assets", imageFileName),
+    path.join(notesRootAbs, imageFileName),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      const relativeToNotes = path.relative(notesRootAbs, candidate);
+      return "/notes/" + relativeToNotes.replace(/\\/g, "/");
+    }
+  }
+  return null;
+}
 const isMarkdownPage = (inputPath) => inputPath && inputPath.match(markdownFileTypeRegex);
 
 module.exports = function(eleventyConfig) {
@@ -419,6 +449,24 @@ module.exports = function(eleventyConfig) {
     return str && parsed.innerHTML;
   });
 
+  // 将 Obsidian 图片语法 ![[image]] 转换为标准 img 标签
+  eleventyConfig.addTransform("obsidian-images", function(str) {
+    if (!isMarkdownPage(this.page?.inputPath)) {
+      return str;
+    }
+    const inputPath = this.page.inputPath;
+    return str.replace(obsidianImageRegex, (match, fileName, widthOrMeta) => {
+      const trimmedName = fileName.trim();
+      const imagePath = resolveObsidianImagePath(inputPath, trimmedName);
+      if (!imagePath) {
+        return match;
+      }
+      const encodedPath = encodeURI(imagePath);
+      const widthAttr = widthOrMeta && !isNaN(widthOrMeta) ? ` width="${widthOrMeta}px"` : "";
+      return `<img src="${encodedPath}" alt="${trimmedName}" class="cm-s-obsidian"${widthAttr} />`;
+    });
+  });
+
   // Shared helper to transform callout blockquotes - used by both callout-block transform and canvas-markdown
   const calloutMeta = /\[!([\w-]*)\|?(\s?.*)\](\+|\-){0,1}(\s?.*)/;
   function transformCalloutBlockquotes(blockquotes) {
@@ -672,6 +720,7 @@ module.exports = function(eleventyConfig) {
   });
 
   eleventyConfig.addPassthroughCopy("src/site/img");
+  eleventyConfig.addPassthroughCopy("src/site/notes");
   eleventyConfig.addPassthroughCopy("src/site/scripts");
   eleventyConfig.addPassthroughCopy("src/site/styles/_theme.*.css");
   eleventyConfig.addPassthroughCopy({ "src/site/logo.*": "/" });
