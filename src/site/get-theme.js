@@ -8,11 +8,13 @@ const themeCommentRegex = /\/\*[\s\S]*?\*\//g;
 
 async function getTheme() {
   let themeUrl = process.env.THEME;
-  if (themeUrl) {
+  if (!themeUrl) return;
+
+  try {
     //https://forum.obsidian.md/t/1-0-theme-migration-guide/42537
     //Not all themes with no legacy mark have a theme.css file, so we need to check for it
     try {
-      await axios.get(themeUrl);
+      await axios.get(themeUrl, { timeout: 15000 });
     } catch {
       if (themeUrl.indexOf("theme.css") > -1) {
         themeUrl = themeUrl.replace("theme.css", "obsidian.css");
@@ -21,7 +23,7 @@ async function getTheme() {
       }
     }
 
-    const res = await axios.get(themeUrl);
+    const res = await axios.get(themeUrl, { timeout: 15000 });
     try {
       const existing = globSync("src/site/styles/_theme.*.css");
       existing.forEach((file) => {
@@ -41,6 +43,8 @@ async function getTheme() {
     hashSum.update(data);
     const hex = hashSum.digest("hex");
     fs.writeFileSync(`src/site/styles/_theme.${hex.substring(0, 8)}.css`, data);
+  } catch (err) {
+    console.warn("get-theme: 获取主题失败，将使用默认样式继续构建:", err.message);
   }
 }
 
