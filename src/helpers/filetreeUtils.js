@@ -85,7 +85,17 @@ function getPermalinkMeta(note, key) {
     if (note.data.tags && note.data.tags.indexOf("gardenEntry") != -1) {
       permalink = "/";
     } else if (note.data.permalink) {
-      permalink = note.data.permalink;
+      // `permalink` can be a string or a function (computed permalink).
+      // For the filetree we always need the final resolved string.
+      if (typeof note.data.permalink === "function") {
+        try {
+          permalink = note.data.permalink(note.data);
+        } catch {
+          permalink = "/";
+        }
+      } else {
+        permalink = note.data.permalink;
+      }
     } else if (note.url) {
       permalink = note.url;
     }
