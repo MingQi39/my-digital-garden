@@ -4,8 +4,8 @@ body {
       IT WILL TAKE PRECEDENCE OVER THE STYLING IN THE STYLE.CSS FILE.
    ***/
     // 侧边栏（文件树）加宽
-    --dg-filetree-width: 320px;
-    --dg-filetree-min-width: 320px;
+    --dg-filetree-width: 350px;
+    --dg-filetree-min-width: 350px;
 }
 
 // 侧边栏收起时的宽度
@@ -20,25 +20,27 @@ body .content {
     transition: margin-left 0.25s ease;
 }
 
-// 侧边栏收起状态
+// 侧边栏收起状态（body class 由 Alpine x-effect 设置，wrapper 的 :class 作为备用）
+body.filetree-collapsed .filetree-wrapper,
+.filetree-wrapper.is-collapsed {
+    width: $filetree-collapsed-width !important;
+    min-width: $filetree-collapsed-width !important;
+}
+body.filetree-collapsed .filetree-sidebar,
+.filetree-wrapper.is-collapsed .filetree-sidebar {
+    width: $filetree-collapsed-width !important;
+    padding: 10px 0 !important;
+    .filetree-toggle-btn {
+        margin: 0 auto;
+    }
+    > a,
+    > h1,
+    .search-button,
+    > .folder {
+        display: none !important;
+    }
+}
 body.filetree-collapsed {
-    .filetree-wrapper {
-        width: $filetree-collapsed-width !important;
-        min-width: $filetree-collapsed-width !important;
-    }
-    .filetree-sidebar {
-        width: $filetree-collapsed-width !important;
-        padding: 10px 0 !important;
-        .filetree-toggle-btn {
-            margin: 0 auto;
-        }
-        > a,
-        > h1,
-        .search-button,
-        > .folder {
-            display: none !important;
-        }
-    }
     .content {
         margin-left: max(
             calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)),
@@ -54,10 +56,11 @@ body.filetree-collapsed {
 }
 
 @media (max-width: 1400px) {
+    body.filetree-collapsed .filetree-wrapper,
+    .filetree-wrapper.is-collapsed {
+        width: $filetree-collapsed-width !important;
+    }
     body.filetree-collapsed {
-        .filetree-wrapper {
-            width: $filetree-collapsed-width !important;
-        }
         .content {
             margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
         }

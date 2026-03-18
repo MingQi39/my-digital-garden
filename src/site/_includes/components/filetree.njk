@@ -23,8 +23,7 @@
     
     <div x-init="isDesktop = (window.innerWidth>=1000) ? true: false;"
             x-on:resize.window="isDesktop = (window.innerWidth>=1000) ? true : false;"
-            x-data="{isDesktop: true, showFilesMobile: false, filetreeExpanded: $persist(true).as('filetreeExpanded')}"
-            x-effect="$nextTick(() => { const body = $el.closest('body'); if (body) body.classList.toggle('filetree-collapsed', !filetreeExpanded); })">
+            x-data="{isDesktop: true, showFilesMobile: false, filetreeExpanded: $persist(true).as('filetreeExpanded')}">
 
         <div x-show.important="!isDesktop" style="display: none;">
             {%include "components/filetreeNavbar.njk"%}
@@ -32,7 +31,9 @@
         
         <div x-show="showFilesMobile && !isDesktop" @click="showFilesMobile = false" style="display:none;" class="fullpage-overlay"></div>
 
-      <div class="filetree-wrapper" x-show.important="isDesktop || showFilesMobile" style="display: none;">
+      <div class="filetree-wrapper" x-show.important="isDesktop || showFilesMobile" style="display: none;"
+           :class="{ 'is-collapsed': !filetreeExpanded }"
+           x-effect="document.body.classList.toggle('filetree-collapsed', !filetreeExpanded)">
       <nav class="filetree-sidebar">
         <button type="button" class="filetree-toggle-btn" @click="filetreeExpanded = !filetreeExpanded" title="展开/收起侧边栏" aria-label="展开/收起侧边栏">
           <i data-lucide="panel-left-close" x-show="filetreeExpanded" style="display: none;"></i>
