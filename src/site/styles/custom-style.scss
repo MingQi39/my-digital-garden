@@ -3,11 +3,87 @@ body {
       ADD YOUR CUSTOM STYLING HERE. (INSIDE THE body {...} section.)
       IT WILL TAKE PRECEDENCE OVER THE STYLING IN THE STYLE.CSS FILE.
    ***/
-    //  background-color: white;
-    //  .content {
-    //   font-size: 14px;
-    //  }
-    //  h1 {
-    //   color: black;
-    //  }
+    // 侧边栏（文件树）加宽
+    --dg-filetree-width: 320px;
+    --dg-filetree-min-width: 320px;
+}
+
+// 侧边栏收起时的宽度
+$filetree-collapsed-width: 48px;
+
+// 侧边栏展开/收起过渡动画
+.filetree-wrapper,
+.filetree-sidebar {
+    transition: width 0.25s ease, min-width 0.25s ease;
+}
+body .content {
+    transition: margin-left 0.25s ease;
+}
+
+// 侧边栏收起状态
+body.filetree-collapsed {
+    .filetree-wrapper {
+        width: $filetree-collapsed-width !important;
+        min-width: $filetree-collapsed-width !important;
+    }
+    .filetree-sidebar {
+        width: $filetree-collapsed-width !important;
+        padding: 10px 0 !important;
+        .filetree-toggle-btn {
+            margin: 0 auto;
+        }
+        > a,
+        > h1,
+        .search-button,
+        > .folder {
+            display: none !important;
+        }
+    }
+    .content {
+        margin-left: max(
+            calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)),
+            min(
+                calc((100vw - var(--dg-content-max-width)) / 2),
+                calc(100vw - var(--dg-content-max-width) - var(--dg-sidebar-max-width) - var(--dg-sidebar-gap) - 20px)
+            )
+        ) !important;
+    }
+    .content.canvas-page {
+        margin-left: calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)) !important;
+    }
+}
+
+@media (max-width: 1400px) {
+    body.filetree-collapsed {
+        .filetree-wrapper {
+            width: $filetree-collapsed-width !important;
+        }
+        .content {
+            margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
+        }
+        .content.canvas-page {
+            margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
+        }
+    }
+}
+
+// 展开/收起按钮样式
+.filetree-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    flex-shrink: 0;
+    &:hover {
+        background: var(--interactive-hover, rgba(255, 255, 255, 0.08));
+        color: var(--text-normal);
+    }
 }
