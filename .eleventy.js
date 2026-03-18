@@ -100,6 +100,9 @@ const markdownFileTypeRegex = /\.(md|markdown)$/i;
 const isMarkdownPage = (inputPath) => inputPath && inputPath.match(markdownFileTypeRegex);
 
 module.exports = function(eleventyConfig) {
+  // 默认 frontmatter：所有笔记默认视为已发布，无需每篇写 published: true
+  eleventyConfig.addGlobalData("published", true);
+
   eleventyConfig.setLiquidOptions({
     dynamicPartials: true,
   });
