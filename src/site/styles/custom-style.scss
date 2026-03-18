@@ -90,22 +90,23 @@ body.filetree-collapsed {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     padding: 0;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--text-muted);
+    border: 1px solid var(--background-modifier-border, rgba(255, 255, 255, 0.15));
+    border-radius: 10px;
+    background: var(--background-primary);
+    color: var(--text-normal);
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+    transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     &:hover {
-        background: var(--interactive-hover, rgba(128, 128, 128, 0.15));
-        color: var(--text-normal);
+        background: var(--interactive-hover, rgba(128, 128, 128, 0.2));
+        border-color: var(--text-muted);
     }
     i, svg {
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
     }
 }
 
