@@ -106,11 +106,28 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.setLiquidOptions({
     dynamicPartials: true,
   });
+  // 在 text 规则之前处理 wikilink，避免 linkify 将 "002.AI" 等误识别为外部链接
+  function wikilinkPlugin(md) {
+    md.inline.ruler.before("text", "wikilink", function (state, silent) {
+      const src = state.src.slice(state.pos);
+      const match = src.match(/^\[\[(.+?)\|([^\]]+)\]\]/);
+      if (!match) return false;
+      if (silent) return true;
+      const fileLink = match[1].trim();
+      const linkTitle = match[2].trim();
+      const token = state.push("html_inline", "", 0);
+      token.content = getAnchorLink(fileLink, linkTitle);
+      state.pos += match[0].length;
+      return true;
+    });
+  }
+
   let markdownLib = markdownIt({
     breaks: true,
     html: true,
     linkify: true,
   })
+    .use(wikilinkPlugin)
     .use(require("markdown-it-anchor"), {
       slugify: headerToId,
     })

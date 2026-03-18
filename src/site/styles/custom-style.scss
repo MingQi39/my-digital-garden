@@ -8,6 +8,16 @@ body {
     --dg-filetree-min-width: 350px;
 }
 
+// 统一文件树目录项字体颜色（避免部分黄色、部分白色的不一致）
+.filetree-sidebar {
+    .notelink .filename {
+        color: var(--text-muted) !important;
+    }
+    .notelink.active-note .filename {
+        color: var(--text-normal) !important;
+    }
+}
+
 // 侧边栏收起时的宽度
 $filetree-collapsed-width: 48px;
 
@@ -68,6 +78,72 @@ body.filetree-collapsed {
             margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
         }
     }
+}
+
+// 主题切换按钮（侧边栏）
+.theme-toggle-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 12px 0;
+}
+.theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    &:hover {
+        background: var(--interactive-hover, rgba(128, 128, 128, 0.15));
+        color: var(--text-normal);
+    }
+    i, svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+// 浅色主题变量覆盖
+body.theme-light {
+    --background-primary: #fafafa;
+    --background-secondary: #f0f0f0;
+    --text-normal: #1a1a1a;
+    --text-muted: #666;
+    --text-accent: rgb(0, 102, 204);
+}
+body.theme-light .filetree-sidebar,
+body.theme-light .filetree-wrapper {
+    background-color: var(--background-secondary);
+}
+body.theme-light .navbar {
+    background-color: var(--background-secondary);
+}
+body.theme-light .theme-toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+// 主题切换（内容区 header，仅在无侧边栏时显示）
+.theme-toggle-header {
+    display: none;
+    margin-left: auto;
+}
+body.no-filetree .theme-toggle-header {
+    display: flex;
+}
+body.no-filetree .content > header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+.theme-toggle-header .theme-toggle-btn {
+    width: 32px;
+    height: 32px;
 }
 
 // 展开/收起按钮样式
