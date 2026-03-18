@@ -1,0 +1,26 @@
+<div class="theme-toggle-header" x-data="{
+  isDark: true,
+  init() {
+    const saved = localStorage.getItem('dg-theme');
+    this.isDark = saved !== 'light';
+    this.$nextTick(() => window.lucide?.createIcons?.());
+  },
+  toggle() {
+    this.isDark = !this.isDark;
+    if (this.isDark) {
+      document.body.classList.remove('theme-light');
+      document.body.classList.add('theme-dark');
+      localStorage.setItem('dg-theme', 'dark');
+    } else {
+      document.body.classList.remove('theme-dark');
+      document.body.classList.add('theme-light');
+      localStorage.setItem('dg-theme', 'light');
+    }
+    this.$nextTick(() => window.lucide?.createIcons?.());
+  }
+}" x-init="init()">
+  <button type="button" class="theme-toggle-btn" @click="toggle()" :title="isDark ? '切换为浅色主题' : '切换为深色主题'" aria-label="切换主题">
+    <i data-lucide="sun" x-show="!isDark" style="display: none;"></i>
+    <i data-lucide="moon" x-show="isDark" style="display: none;"></i>
+  </button>
+</div>
