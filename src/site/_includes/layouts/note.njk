@@ -102,49 +102,78 @@
       {%include "components/canvasScript.njk"%}
     {% endif %}
     {% if mindmapPlugin == "markdown" %}
-    <script type="module">
-      import { Transformer } from "https://cdn.jsdelivr.net/npm/markmap-lib@0.17.3/+esm";
-      import { Markmap } from "https://cdn.jsdelivr.net/npm/markmap-view@0.17.3/+esm";
-
-      function toOutlineMarkdown(main) {
-        var title = (main.querySelector("header h1") || {}).textContent || "思维导图";
-        var headings = Array.from(main.querySelectorAll("h1,h2,h3,h4,h5,h6"))
-          .filter(function (el) { return el.closest("#dg-mindmap-wrapper") == null; });
-        var lines = ["# " + title.trim()];
-        if (!headings.length) return lines.join("\n");
-        headings.forEach(function (h) {
-          var text = (h.textContent || "").trim();
-          if (!text) return;
-          var level = Number(h.tagName.slice(1));
-          var indent = "  ".repeat(Math.max(0, level - 2));
-          lines.push(indent + "- " + text);
-        });
-        return lines.join("\n");
-      }
-
-      var main = document.querySelector("main.content");
-      var svg = document.getElementById("dg-mindmap");
-      var wrapper = document.getElementById("dg-mindmap-wrapper");
-      var toggle = document.getElementById("dg-mindmap-toggle");
-      if (main && svg && wrapper) {
-        var markdown = toOutlineMarkdown(main);
-        var transformer = new Transformer();
-        var transformed = transformer.transform(markdown);
-        Markmap.create(svg, {
-          autoFit: true,
-          duration: 300,
-          fitRatio: 0.9,
-          maxWidth: 320
-        }, transformed.root);
-
-        main.classList.add("dg-mindmap-mode");
-        if (toggle) {
-          toggle.addEventListener("click", function () {
-            main.classList.toggle("dg-show-raw-content");
-            toggle.textContent = main.classList.contains("dg-show-raw-content") ? "隐藏原文" : "显示原文";
+    <script>
+      (function () {
+        function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+            var s = document.createElement("script");
+            s.src = src;
+            s.async = true;
+            s.onload = resolve;
+            s.onerror = function () {
+              reject(new Error("加载失败: " + src));
+            };
+            document.head.appendChild(s);
           });
         }
-      }
+
+        function toOutlineMarkdown(main) {
+          var title = (main.querySelector("header h1") || {}).textContent || "思维导图";
+          var headings = Array.from(main.querySelectorAll("h1,h2,h3,h4,h5,h6"))
+            .filter(function (el) { return el.closest("#dg-mindmap-wrapper") == null; });
+          var lines = ["# " + title.trim()];
+          if (!headings.length) return lines.join("\n");
+          headings.forEach(function (h) {
+            var text = (h.textContent || "").trim();
+            if (!text) return;
+            var level = Number(h.tagName.slice(1));
+            var indent = "  ".repeat(Math.max(0, level - 2));
+            lines.push(indent + "- " + text);
+          });
+          return lines.join("\n");
+        }
+
+        var main = document.querySelector("main.content");
+        var svg = document.getElementById("dg-mindmap");
+        var wrapper = document.getElementById("dg-mindmap-wrapper");
+        var toggle = document.getElementById("dg-mindmap-toggle");
+        if (!main || !svg || !wrapper) return;
+
+        Promise.resolve()
+          .then(function () {
+            return loadScript("https://cdn.jsdelivr.net/npm/markmap-lib@0.18.12");
+          })
+          .then(function () {
+            return loadScript("https://cdn.jsdelivr.net/npm/markmap-view@0.18.12");
+          })
+          .then(function () {
+            var markmap = window.markmap || {};
+            var Transformer = markmap.Transformer;
+            var Markmap = markmap.Markmap;
+            if (!Transformer || !Markmap) throw new Error("markmap 全局对象不可用");
+
+            var markdown = toOutlineMarkdown(main);
+            var transformer = new Transformer();
+            var transformed = transformer.transform(markdown);
+            Markmap.create(svg, {
+              autoFit: true,
+              duration: 300,
+              fitRatio: 0.9,
+              maxWidth: 320
+            }, transformed.root);
+
+            main.classList.add("dg-mindmap-mode");
+            if (toggle) {
+              toggle.addEventListener("click", function () {
+                main.classList.toggle("dg-show-raw-content");
+                toggle.textContent = main.classList.contains("dg-show-raw-content") ? "隐藏原文" : "显示原文";
+              });
+            }
+          })
+          .catch(function (err) {
+            console.error("[dg-mindmap]", err);
+          });
+      })();
     </script>
     <style>
       .dg-mindmap-wrapper {
