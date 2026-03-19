@@ -37,6 +37,12 @@ body .content:not(.canvas-page) {
     overflow-x: auto;
     min-width: 0; /* flex 子项防止被内容撑开，避免溢出遮挡侧边栏 */
 }
+// 强制正文区保持 700px 最大宽度，避免在中等屏幕（1000-1400px）时占满剩余空间（如 012.网页字体度量及渲染 的宽表格）
+@media (max-width: 1400px) {
+    body .content:not(.canvas-page) {
+        max-width: var(--dg-content-max-width) !important;
+    }
+}
 
 // 侧边栏收起状态（body class 由 Alpine x-effect 设置，wrapper 的 :class 作为备用）
 body.filetree-collapsed .filetree-wrapper,
