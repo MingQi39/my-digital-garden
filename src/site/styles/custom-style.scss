@@ -35,6 +35,7 @@ body .content {
 // 宽内容（图片、表格等）溢出时在内容区内横向滚动，避免遮挡右侧边栏
 body .content:not(.canvas-page) {
     overflow-x: auto;
+    min-width: 0; /* flex 子项防止被内容撑开，避免溢出遮挡侧边栏 */
 }
 
 // 侧边栏收起状态（body class 由 Alpine x-effect 设置，wrapper 的 :class 作为备用）

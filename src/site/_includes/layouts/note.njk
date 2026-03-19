@@ -139,8 +139,10 @@
         var toggle = document.getElementById("dg-mindmap-toggle");
         if (!main || !svg || !wrapper) return;
 
-        var LIB_CDN = "https://unpkg.pkg.npmmirror.com/markmap-lib@0.18.12/dist/browser/index.iife.js";
-        var VIEW_CDN = "https://unpkg.pkg.npmmirror.com/markmap-view@0.18.12/dist/browser/index.js";
+        var D3_CDN = "https://fastly.jsdelivr.net/npm/d3@7/dist/d3.min.js";
+        var D3_FALLBACK = "https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js";
+        var LIB_CDN = "https://fastly.jsdelivr.net/npm/markmap-lib@0.18.12/dist/browser/index.iife.js";
+        var VIEW_CDN = "https://fastly.jsdelivr.net/npm/markmap-view@0.18.12/dist/browser/index.js";
         var LIB_FALLBACK = "https://cdn.jsdelivr.net/npm/markmap-lib@0.18.12/dist/browser/index.iife.js";
         var VIEW_FALLBACK = "https://cdn.jsdelivr.net/npm/markmap-view@0.18.12/dist/browser/index.js";
 
@@ -151,12 +153,9 @@
         }
 
         Promise.resolve()
-          .then(function () {
-            return loadWithFallback(LIB_CDN, LIB_FALLBACK);
-          })
-          .then(function () {
-            return loadWithFallback(VIEW_CDN, VIEW_FALLBACK);
-          })
+          .then(function () { return loadWithFallback(D3_CDN, D3_FALLBACK); })
+          .then(function () { return loadWithFallback(LIB_CDN, LIB_FALLBACK); })
+          .then(function () { return loadWithFallback(VIEW_CDN, VIEW_FALLBACK); })
           .then(function () {
             var markmap = window.markmap || {};
             var Transformer = markmap.Transformer;
