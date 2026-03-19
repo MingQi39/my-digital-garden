@@ -65,6 +65,14 @@
       {% for imp in dynamics.notes.beforeContent %}
         {% include imp %}
       {% endfor %}
+      {% if mindmapPlugin == "markdown" %}
+      <div id="dg-mindmap-wrapper" class="dg-mindmap-wrapper">
+        <div class="dg-mindmap-toolbar">
+          <button id="dg-mindmap-toggle" type="button" class="clickable-icon">显示原文</button>
+        </div>
+        <svg id="dg-mindmap" class="dg-mindmap"></svg>
+      </div>
+      {% endif %}
       {{ content | hideDataview | taggify | link | safe}}
       {% for imp in dynamics.common.afterContent %}
         {% include imp %}
@@ -92,6 +100,87 @@
     {%include "components/lucideIcons.njk"%}
     {% if contentClasses and "canvas-page" in contentClasses %}
       {%include "components/canvasScript.njk"%}
+    {% endif %}
+    {% if mindmapPlugin == "markdown" %}
+    <script type="module">
+      import { Transformer } from "https://cdn.jsdelivr.net/npm/markmap-lib@0.17.3/+esm";
+      import { Markmap } from "https://cdn.jsdelivr.net/npm/markmap-view@0.17.3/+esm";
+
+      function toOutlineMarkdown(main) {
+        var title = (main.querySelector("header h1") || {}).textContent || "思维导图";
+        var headings = Array.from(main.querySelectorAll("h1,h2,h3,h4,h5,h6"))
+          .filter(function (el) { return el.closest("#dg-mindmap-wrapper") == null; });
+        var lines = ["# " + title.trim()];
+        if (!headings.length) return lines.join("\n");
+        headings.forEach(function (h) {
+          var text = (h.textContent || "").trim();
+          if (!text) return;
+          var level = Number(h.tagName.slice(1));
+          var indent = "  ".repeat(Math.max(0, level - 2));
+          lines.push(indent + "- " + text);
+        });
+        return lines.join("\n");
+      }
+
+      var main = document.querySelector("main.content");
+      var svg = document.getElementById("dg-mindmap");
+      var wrapper = document.getElementById("dg-mindmap-wrapper");
+      var toggle = document.getElementById("dg-mindmap-toggle");
+      if (main && svg && wrapper) {
+        var markdown = toOutlineMarkdown(main);
+        var transformer = new Transformer();
+        var transformed = transformer.transform(markdown);
+        Markmap.create(svg, {
+          autoFit: true,
+          duration: 300,
+          fitRatio: 0.9,
+          maxWidth: 320
+        }, transformed.root);
+
+        main.classList.add("dg-mindmap-mode");
+        if (toggle) {
+          toggle.addEventListener("click", function () {
+            main.classList.toggle("dg-show-raw-content");
+            toggle.textContent = main.classList.contains("dg-show-raw-content") ? "隐藏原文" : "显示原文";
+          });
+        }
+      }
+    </script>
+    <style>
+      .dg-mindmap-wrapper {
+        border: 1px solid var(--background-modifier-border);
+        border-radius: 12px;
+        margin: 12px 0 18px;
+        background: var(--background-secondary);
+        overflow: hidden;
+      }
+      .dg-mindmap-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--background-modifier-border);
+      }
+      .dg-mindmap-toolbar .clickable-icon {
+        cursor: pointer;
+        border: 1px solid var(--background-modifier-border);
+        border-radius: 8px;
+        padding: 4px 10px;
+        background: var(--background-primary);
+        color: var(--text-normal);
+      }
+      .dg-mindmap {
+        display: block;
+        width: 100%;
+        height: min(72vh, 760px);
+        background: var(--background-primary);
+      }
+      main.content.dg-mindmap-mode > *:not(header):not(#dg-mindmap-wrapper) {
+        display: none;
+      }
+      main.content.dg-mindmap-mode.dg-show-raw-content > *:not(header):not(#dg-mindmap-wrapper) {
+        display: revert;
+      }
+    </style>
     {% endif %}
   </body>
 </html>
