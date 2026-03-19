@@ -99,6 +99,12 @@ function getPermalinkMeta(note, key) {
     } else if (note.url) {
       permalink = note.url;
     }
+
+    // filetree 里 href 需要是“绝对路径”，否则在深层页面内点击会被浏览器当成相对地址拼接导致 404。
+    if (typeof permalink === "string" && !permalink.startsWith("/")) {
+      permalink = "/" + permalink;
+    }
+
     if (note.data.title) {
       name = note.data.title;
     }

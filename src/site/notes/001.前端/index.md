@@ -6,5 +6,5 @@ layout: layouts/note.njk
 
 这里是「001.前端」分类入口。
 
-- [[001.HTML/001.iframe|从 HTML 开始]]
+- [[001.前端/001.HTML/001.iframe|从 HTML 开始]]
 
