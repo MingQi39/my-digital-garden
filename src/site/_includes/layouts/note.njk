@@ -139,12 +139,23 @@
         var toggle = document.getElementById("dg-mindmap-toggle");
         if (!main || !svg || !wrapper) return;
 
+        var LIB_CDN = "https://unpkg.pkg.npmmirror.com/markmap-lib@0.18.12/dist/browser/index.iife.js";
+        var VIEW_CDN = "https://unpkg.pkg.npmmirror.com/markmap-view@0.18.12/dist/browser/index.js";
+        var LIB_FALLBACK = "https://cdn.jsdelivr.net/npm/markmap-lib@0.18.12/dist/browser/index.iife.js";
+        var VIEW_FALLBACK = "https://cdn.jsdelivr.net/npm/markmap-view@0.18.12/dist/browser/index.js";
+
+        function loadWithFallback(primary, fallback) {
+          return loadScript(primary).catch(function () {
+            return loadScript(fallback);
+          });
+        }
+
         Promise.resolve()
           .then(function () {
-            return loadScript("https://cdn.jsdelivr.net/npm/markmap-lib@0.18.12");
+            return loadWithFallback(LIB_CDN, LIB_FALLBACK);
           })
           .then(function () {
-            return loadScript("https://cdn.jsdelivr.net/npm/markmap-view@0.18.12");
+            return loadWithFallback(VIEW_CDN, VIEW_FALLBACK);
           })
           .then(function () {
             var markmap = window.markmap || {};
@@ -163,15 +174,18 @@
             }, transformed.root);
 
             main.classList.add("dg-mindmap-mode");
+          })
+          .catch(function (err) {
+            console.error("[dg-mindmap]", err);
+            main.classList.add("dg-mindmap-mode");
+          })
+          .finally(function () {
             if (toggle) {
               toggle.addEventListener("click", function () {
                 main.classList.toggle("dg-show-raw-content");
                 toggle.textContent = main.classList.contains("dg-show-raw-content") ? "隐藏原文" : "显示原文";
               });
             }
-          })
-          .catch(function (err) {
-            console.error("[dg-mindmap]", err);
           });
       })();
     </script>

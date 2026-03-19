@@ -32,6 +32,10 @@ $filetree-collapsed-width: 48px;
 body .content {
     transition: margin-left 0.25s ease;
 }
+// 宽内容（图片、表格等）溢出时在内容区内横向滚动，避免遮挡右侧边栏
+body .content:not(.canvas-page) {
+    overflow-x: auto;
+}
 
 // 侧边栏收起状态（body class 由 Alpine x-effect 设置，wrapper 的 :class 作为备用）
 body.filetree-collapsed .filetree-wrapper,

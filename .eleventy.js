@@ -165,7 +165,42 @@ function resolveObsidianImagePath(inputPath, imageFileName) {
 }
 const isMarkdownPage = (inputPath) => inputPath && inputPath.match(markdownFileTypeRegex);
 
+function obsidianDateToIso(val) {
+  if (val == null || typeof val !== "string") return null;
+  const s = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}T\d/.test(s)) return s;
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*$/);
+  if (m) {
+    let [, y, mo, d, h, min, sec] = m;
+    let hh = parseInt(h, 10);
+    if (hh === 24) {
+      const next = new Date(Date.UTC(parseInt(y), parseInt(mo) - 1, parseInt(d) + 1));
+      y = next.getUTCFullYear();
+      mo = String(next.getUTCMonth() + 1).padStart(2, "0");
+      d = String(next.getUTCDate()).padStart(2, "0");
+      hh = 0;
+    }
+    const iso = `${y}-${mo}-${d}T${String(hh).padStart(2, "0")}:${min}:${sec || "00"}`;
+    const date = new Date(iso);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  const m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})\s*$/);
+  if (m2) {
+    const iso = `${m2[1]}-${m2[2]}-${m2[3]}T00:00:00`;
+    const date = new Date(iso);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  return null;
+}
+
 module.exports = function(eleventyConfig) {
+  eleventyConfig.addDateParsing(function (dateValue) {
+    if (typeof dateValue === "string") {
+      return obsidianDateToIso(dateValue);
+    }
+    return undefined;
+  });
+
   // 默认 frontmatter：所有笔记默认视为已发布，无需每篇写 published: true
   eleventyConfig.addGlobalData("published", true);
 
