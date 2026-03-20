@@ -32,34 +32,13 @@ $filetree-collapsed-width: 48px;
 body .content {
     transition: margin-left 0.25s ease;
 }
-// ========== 正文区宽度与溢出修复（解决 012.网页字体度量及渲染 等宽表格文章占满屏幕、无法滚动的问题）==========
-// 1. 强制正文区 max-width，覆盖 base 在 1400px 断点的 calc(100vw - ...) 规则
-body main.content:not(.canvas-page),
+// ========== 正文区宽度修复：覆盖 base 在 1400px 断点的 max-width，与正确布局（如 013）保持一致 ==========
+// 仅覆盖 max-width，不改变 margin-left 等布局，保持与 base 默认一致
 body .content:not(.canvas-page) {
-    width: 100% !important;
-    max-width: var(--dg-content-max-width) !important;
+    overflow-x: auto;
     min-width: 0;
-    box-sizing: border-box;
-    overflow-x: auto !important;
-    overflow-y: visible;
 }
-// 2. 内容滚动包装（note.njk 中 div.content-body）：确保宽表格/图片在内部横向滚动
-body main.content:not(.canvas-page) .content-body,
-body .content:not(.canvas-page) .content-body {
-    overflow-x: auto !important;
-    overflow-y: visible;
-    min-width: 0;
-    width: 100%;
-}
-// 3. 覆盖 base 各断点的 max-width，确保所有视口下都保持 700px
 @media (max-width: 1400px) {
-    body main.content:not(.canvas-page),
-    body .content:not(.canvas-page) {
-        max-width: var(--dg-content-max-width) !important;
-    }
-}
-@media (max-width: 1000px) {
-    body main.content:not(.canvas-page),
     body .content:not(.canvas-page) {
         max-width: var(--dg-content-max-width) !important;
     }
