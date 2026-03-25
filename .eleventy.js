@@ -213,6 +213,8 @@ module.exports = function(eleventyConfig) {
       const src = state.src.slice(state.pos);
       const match = src.match(/^\[\[(.+?)\|([^\]]+)\]\]/);
       if (!match) return false;
+      // Obsidian 嵌入图 ![[file|width]]：勿把紧随 ! 之后的 [[...|...]] 当作笔记链接
+      if (state.pos > 0 && state.src[state.pos - 1] === "!") return false;
       if (silent) return true;
       const fileLink = match[1].trim();
       const linkTitle = match[2].trim();
@@ -440,7 +442,11 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.addFilter("link", function(str) {
     return (
       str &&
-      str.replace(/\[\[(.*?\|.*?)\]\]/g, function(match, p1) {
+      str.replace(/\[\[(.*?\|.*?)\]\]/g, function(match, p1, offset, fullStr) {
+        // Obsidian 图片嵌入 ![[file|width]]：勿把 [[file|width]] 当成维基链接
+        if (offset > 0 && fullStr[offset - 1] === "!") {
+          return match;
+        }
         //Check if it is an embedded excalidraw drawing or mathjax javascript
         if (p1.indexOf("],[") > -1 || p1.indexOf('"$"') > -1) {
           return match;
