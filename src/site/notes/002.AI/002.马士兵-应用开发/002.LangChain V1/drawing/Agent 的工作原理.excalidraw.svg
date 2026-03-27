@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 451.6640625 1550.21484375" width="451.6640625" height="1550.21484375" class="excalidraw-svg">
+<!-- svg-source:excalidraw-simple -->
+<rect x="0" y="0" width="451.6640625" height="1550.21484375" fill="#ffffff"/>
+<rect x="129.9375" y="16" width="257.58984375" height="68.28515625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="167.1015625" y="58.57421875" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">用户输入自然语言问题</text>
+<rect x="130.16015625" y="148.8125" width="257.58984375" height="68.28515625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="158.955078125" y="190.455078125" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">问题重写与关键词提取</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="258.632421875,90.28515625 258.855078125,142.8125" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="258.855078125,142.8125 264.81263596577327,132.78715688498193 252.8127437721126,132.83802279225034" fill="#1e1e1e"/>
+<rect x="130.65625" y="281.4609375" width="257.58984375" height="68.28515625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="144.76119995117188" y="323.103515625" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Schema回忆与表关系解析</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="258.855078125,223.09765625 259.351171875,275.4609375" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="259.351171875,275.4609375 265.256166101951,265.4045443503824 253.25670461449084,265.51822817051726" fill="#1e1e1e"/>
+<rect x="129.9609375" y="417.02734375" width="257.58984375" height="68.28515625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="199.43588256835938" y="458.669921875" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">SQL查询生成</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="259.351171875,355.74609375 258.655859375,411.02734375" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="258.655859375,411.02734375 264.7811521611569,401.103595048836 252.78210124392913,400.9526742557844" fill="#1e1e1e"/>
+<rect x="33.1015625" y="596.53125" width="257.58984375" height="68.28515625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<rect x="16" y="1312.703125" width="293.9140625" height="79.69140625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="72.95703125" y="1360.048828125" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">结果转换为自然语言</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="163.507421875,1253.32421875 162.8078155831681,1306.703125" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="162.8078155831681,1306.703125 168.93835324578197,1296.7826155389253 156.9393837822734,1296.6253520218938" fill="#1e1e1e"/>
+<rect x="54.0546875" y="1458.57421875" width="219.0625" height="75.64062499999994" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="103.5859375" y="1503.89453125" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">返回最终回答</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="162.85703125,1398.39453125 163.51140465929933,1452.8792037997525" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="163.51140465929933,1452.8792037997525 169.39087833771373,1442.8078687708285 157.39174371773782,1442.9519811287169" fill="#1e1e1e"/>
+<text x="104.83984375" y="637.16796875" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">SQL语法验证</text>
+<rect x="33.28125" y="736.66015625" width="257.58984375" height="68.28515625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="92.076171875" y="778.302734375" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">语义一致性校验</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="161.796484375,670.81640625 161.976171875,730.66015625" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="161.976171875,730.66015625 167.94611885385635,720.6421857434731 155.94617294752626,720.6782169126435" fill="#1e1e1e"/>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="161.976171875,810.9453125 160.99627140616866,884.3638726187605" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="160.99627140616866,884.3638726187605 167.1291928600851,874.4448366555183 155.13026153456272,874.2846897061321" fill="#1e1e1e"/>
+<text x="102.2265625" y="988.6796875" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">校验是否通过</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="260.80859375,484.1875 167.2035171493611,590.53125" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="167.2035171493611,590.53125 178.314501022402,586.9892114100035 169.30688727491275,579.0605990108479" fill="#1e1e1e"/>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="162.19003097559596,1078.0114402444503 163.5309038132015,1161.6328125" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="163.5309038132015,1161.6328125 169.3698027100915,1151.537899936144 157.37134514951214,1151.7302957962236" fill="#1e1e1e"/>
+<text x="153.33967421690326" y="1128.7125438552291" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">是</text>
+<rect x="65.12109375" y="1167.6328125" width="196.97265625" height="79.69140625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="123.61742401123047" y="1214.978515625" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">执行查询</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="264.0686312209399,974.929306860188 425.6640625,752.19140625 262.5334872459546,491.3125" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="262.5334872459546,491.3125 262.7480981272894,502.9724289092864 272.92265316889427,496.6101628267217" fill="#1e1e1e"/>
+<text x="415.6640625" y="759.69140625" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">否</text>
+</svg>

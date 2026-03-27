@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1051.989549929676 686.7447968772103" width="1051.989549929676" height="686.7447968772103" class="excalidraw-svg">
+<!-- svg-source:excalidraw-simple -->
+<rect x="0" y="0" width="1051.989549929676" height="686.7447968772103" fill="#ffffff"/>
+<rect x="397.1553378330243" y="16" width="150.9609375" height="58.734375" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="432.6358065830243" y="52.8671875" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">用户问题</text>
+<rect x="316.0850553417004" y="145.675398855749" width="314.81640625" height="79.56640625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="393.4932584667004" y="192.958601980749" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">模型生成推理步骤</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="472.5358065830243,80.734375 473.2847168323786,137.54730627793575" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="473.2847168323786,137.54730627793575 479.15238666801105,127.46908963509614 467.1534291289942,127.62726035574732" fill="#1e1e1e"/>
+<rect x="16.679687500000057" y="285.6822968772103" width="283.9296875" height="67.73828125" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="477.85073573834086,224.273055105749 352.4170565830243,249.6640625 190.94726565401947,279.6822968772103" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="190.94726565401947,279.6822968772103 201.87546158781404,283.75348019813754 199.68216667074094,271.9556220278279" fill="#1e1e1e"/>
+<text x="56.174545288085994" y="327.0514375022103" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Thought：思考下一步</text>
+<rect x="16.000000000000057" y="436.7408906272103" width="285.75390625" height="77.71675825798444" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="47.66696929931646" y="470.59926975620255" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Action：</text>
+<text x="47.66696929931646" y="495.59926975620255" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">执行操作/查询/工具调用</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="158.54453125000003,359.4205781272103 158.77631063538718,429.85703498542125" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="158.77631063538718,429.85703498542125 164.74337216173947,419.83734553211355 152.7434371301638,419.87683271943615" fill="#1e1e1e"/>
+<rect x="134.08593750000006" y="597.7174531272103" width="268.4453125" height="73.02734375" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="160.22863769531256" y="641.7311250022103" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Observation：得到结果</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="157.90234375000006,512.9219873641312 190.85937500000006,558.2057343772103 256.57041275480424,591.7174531272102" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="256.57041275480424,591.7174531272102 250.3879059541983,581.8292475437657 244.93611051030342,592.5193329708299" fill="#1e1e1e"/>
+<rect x="391.4959385114631" y="377.3310534450765" width="162.99035898476205" height="56.699283383234224" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="432.9911180038441" y="413.18069513669366" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">最终答案</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="473.39325846670044,231.241805105749 472.9393448574169,373.0554336661651" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="472.9393448574169,373.0554336661651 478.9713217153114,363.0746894461269 466.97138318462765,363.03628033506374" fill="#1e1e1e"/>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="271.47269209120134,591.7174531272103 355.68048621686904,430.6699908047875 470.0828291497968,231.241805105749" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="470.0828291497968,231.241805105749 459.9024417967715,236.9303649711598 470.31137615902975,242.90146917743522" fill="#1e1e1e"/>
+<rect x="596.9024353902105" y="272.8150998943613" width="299.8508218417696" height="77.75370321947275" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="666.8278463110953" y="306.6919515040977" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Thought：</text>
+<text x="666.8278463110953" y="331.6919515040977" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">根据观察继续推理</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="473.9602065151922,224.31582992844403 619.5081732586975,251.83109748136212 750.4848965377525,273.7903543258386" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="750.4848965377525,273.7903543258386 741.6146462004194,266.2194455988071 739.630447502215,278.0542652225295" fill="#1e1e1e"/>
+<text x="579.5081732586975" y="259.3310974813621" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">多轮迭代</text>
+<rect x="618.8361834290754" y="432.62667466292436" width="257.02267003385526" height="70.30805590726006" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="656.3175425548898" y="475.2807026165544" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Action：进一步操作</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="746.7278463110954,356.56880311383406 747.261801599054,427.2012310123136" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="747.261801599054,427.2012310123136 753.1860359844052,417.15616023369665 741.1863788580868,417.2468732470664" fill="#1e1e1e"/>
+<rect x="806.2586268428724" y="571.2950624837015" width="229.73092308680373" height="74.73422891837093" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="863.0441323315868" y="616.1621769428868" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Observation</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="760.9122742912,508.9347305701844 835.8799385326138,542.1575834712878 924.1292134245413,571.5669675601741" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="924.1292134245413,571.5669675601741 916.5391112510588,562.7131351133692 912.7451955368981,574.0976071500445" fill="#1e1e1e"/>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="923.079179334239,565.2950624837015 1014.714351923841,280.7311400873091 636.9014615917004,186.95579335838607" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="636.9014615917004,186.95579335838607 645.1615920557691,195.188061862059 648.0523481368558,183.5414516565245" fill="#1e1e1e"/>
+</svg>

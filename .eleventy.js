@@ -8,6 +8,7 @@ const tocPlugin = require("eleventy-plugin-nesting-toc");
 const { parse } = require("node-html-parser");
 const htmlMinifier = require("html-minifier-terser");
 const pluginRss = require("@11ty/eleventy-plugin-rss");
+const { globSync } = require("glob");
 
 const { headerToId, namedHeadingsFilter } = require("./src/helpers/utils");
 const {
@@ -141,18 +142,29 @@ const obsidianImageRegex = /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
 const NOTES_ROOT = "./src/site/notes/";
 const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"];
+// Obsidian 中偶见 `*.excalidaw`（少写 r），path.extname 与 `*.excalidraw` 不同
+const OBSIDIAN_EXCALIDAW_EXT = path.extname("n.excalidaw").toLowerCase();
 
 function resolveObsidianImagePath(inputPath, imageFileName) {
   if (!inputPath || !isMarkdownPage(inputPath)) return null;
-  const ext = path.extname(imageFileName).toLowerCase();
+  let resolvedFileName = imageFileName.trim();
+  // Obsidian Excalidraw：![[name.excalidraw]] 对应站点内导出的 name.excalidraw.svg（与 .excalidraw.md 配套）
+  // .excalidaw（excalidraw 少写 r）等 Obsidian 仍按 Excalidraw 处理
+  let ext = path.extname(resolvedFileName).toLowerCase();
+  if (ext === ".excalidraw" || ext === OBSIDIAN_EXCALIDAW_EXT) {
+    resolvedFileName =
+      resolvedFileName.slice(0, -ext.length) + ".excalidraw.svg";
+    ext = path.extname(resolvedFileName).toLowerCase();
+  }
   if (!IMAGE_EXTENSIONS.includes(ext) && ext !== "") return null;
   const noteDir = path.dirname(path.resolve(inputPath));
   const notesRootAbs = path.resolve(NOTES_ROOT);
 
   const candidates = [
-    path.join(noteDir, imageFileName),
-    path.join(noteDir, "assets", imageFileName),
-    path.join(notesRootAbs, imageFileName),
+    path.join(noteDir, resolvedFileName),
+    path.join(noteDir, "assets", resolvedFileName),
+    path.join(noteDir, "drawing", resolvedFileName),
+    path.join(notesRootAbs, resolvedFileName),
   ];
 
   for (const candidate of candidates) {
@@ -194,6 +206,10 @@ function obsidianDateToIso(val) {
 }
 
 module.exports = function(eleventyConfig) {
+  // notes 下任意 drawing/ 目录：仅存放 Excalidraw 源稿与导出图，不作为独立笔记页面发布
+  //（避免侧边栏、搜索、RSS 出现仅作嵌入用的图稿页；静态资源仍由 passthrough 复制）
+  eleventyConfig.ignores.add("src/site/notes/**/drawing/**/*.md");
+
   eleventyConfig.addDateParsing(function (dateValue) {
     if (typeof dateValue === "string") {
       return obsidianDateToIso(dateValue);
@@ -799,6 +815,23 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/site/img");
   eleventyConfig.addPassthroughCopy("src/site/notes");
   eleventyConfig.addPassthroughCopy("src/site/scripts");
+
+  // passthrough 会复制 notes 下全部文件；删除输出中的 drawing/*.md，避免源稿可通过静态 URL 访问（图仍保留 .svg 等）
+  eleventyConfig.on("eleventy.after", () => {
+    try {
+      const distNotes = path.join(process.cwd(), "dist/notes");
+      if (!fs.existsSync(distNotes)) return;
+      for (const f of globSync("**/drawing/**/*.md", {
+        cwd: distNotes,
+        absolute: true,
+        nodir: true,
+      })) {
+        fs.unlinkSync(f);
+      }
+    } catch {
+      // ignore
+    }
+  });
   eleventyConfig.addPassthroughCopy("src/site/styles/_theme.*.css");
   eleventyConfig.addPassthroughCopy({ "src/site/logo.*": "/" });
   eleventyConfig.addPlugin(faviconsPlugin, { outputDir: "dist" });

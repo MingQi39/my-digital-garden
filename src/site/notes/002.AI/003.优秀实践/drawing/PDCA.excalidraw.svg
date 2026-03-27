@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 347.36328125 816.30078125" width="347.36328125" height="816.30078125" class="excalidraw-svg">
+<!-- svg-source:excalidraw-simple -->
+<rect x="0" y="0" width="347.36328125" height="816.30078125" fill="#ffffff"/>
+<rect x="134.6328125" y="16" width="140.46875" height="64.1015625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="163.05719757080078" y="55.55078125" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">目标Goal</text>
+<rect x="134.4921875" y="156.078125" width="140.22265625" height="77.9140625" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="164.603515625" y="190.03515625" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Plan</text>
+<text x="164.603515625" y="215.03515625" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">策略设计</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="204.7671875,86.1015625 204.50369081966073,148.7852547989031" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="204.50369081966073,148.7852547989031 210.54567336046634,138.81056447906857 198.54577938018585,138.76012181827016" fill="#1e1e1e"/>
+<rect x="17.0390625" y="317.86328125" width="140.22265625" height="60" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="47.150390625" y="342.86328125" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Do</text>
+<text x="47.150390625" y="367.86328125" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">执行行动</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="188.07255161636724,239.9921875 120.8046875,264.38671875 90.93880747061039,311.86328125" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="90.93880747061039,311.86328125 101.34220968159951,306.59363017650503 91.18483403446265,300.2039729116002" fill="#1e1e1e"/>
+<rect x="16.51171875" y="447.11328125" width="140.22265625" height="60" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="35.20307159423828" y="484.61328125" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">结果Result</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="87.050390625,383.86328125 86.523046875,441.11328125" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="86.523046875,441.11328125 92.61490088804861,431.1689705808936 80.61540993781135,431.0584403353776" fill="#1e1e1e"/>
+<rect x="16" y="583.75" width="140.22265625" height="60" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="46.111328125" y="608.75" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Check</text>
+<text x="46.111328125" y="633.75" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">误差分析</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="86.523046875,513.11328125 86.011328125,577.75" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="86.011328125,577.75 92.09030605307525,567.7978129363454 80.09068209381077,567.7028137982137" fill="#1e1e1e"/>
+<rect x="117.17578125" y="715.0859375" width="214.1875" height="85.21484375" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2" rx="4"/>
+<text x="184.26953125" y="752.693359375" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">Act</text>
+<text x="184.26953125" y="777.693359375" font-family="system-ui, sans-serif" font-size="20" fill="#1e1e1e">策略更新</text>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="93.86597454561951,649.75 146.2109375,690.32421875 221.02376398189784,715.5234375" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="221.02376398189784,715.5234375 213.46217202426777,706.6452435920983 209.63166725957035,718.0174568000728" fill="#1e1e1e"/>
+<polyline fill="none" stroke="#1e1e1e" stroke-width="2" points="225.9792202310459,709.0859375 294.26953125,466.38671875 206.93218771161236,239.9921875" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="206.93218771161236,239.9921875 204.93350535752927,251.4815420879426 216.12929712258142,247.16248585381098" fill="#1e1e1e"/>
+</svg>
