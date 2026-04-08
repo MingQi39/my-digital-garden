@@ -11,7 +11,7 @@
     {% endfor %}
   </head>
   <body class="theme-{{meta.baseTheme}} markdown-preview-view markdown-rendered markdown-preview-section {% if settings.dgShowFileTree !== true %}no-filetree{% endif %} {% if settings.dgHomeLink === true and settings.dgShowFileTree !== true %}has-navbar{% endif %} {{meta.bodyClasses}}">
-    <script>(function(){var s=localStorage.getItem('dg-theme');if(s==='light'){document.body.classList.remove('theme-dark');document.body.classList.add('theme-light');}})();</script>
+    {% include "components/themeBootScript.njk" %}
     {%include "components/notegrowthhistory.njk"%}
     {% if settings.dgShowFileTree !== true %}
       {%include "components/navbar.njk"%}

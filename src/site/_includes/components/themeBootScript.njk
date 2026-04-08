@@ -1,0 +1,34 @@
+<script>(function(){
+  try {
+    var s = localStorage.getItem('dg-theme');
+    var followSys = {{ meta.themeFollowsSystem | dump }};
+    var fallbackDark = {{ (meta.baseTheme == 'dark') | dump }};
+    var useDark;
+    if (s === 'light') useDark = false;
+    else if (s === 'dark') useDark = true;
+    else if (followSys)
+      useDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    else
+      useDark = fallbackDark;
+    document.body.classList.remove('theme-dark','theme-light');
+    document.body.classList.add(useDark ? 'theme-dark' : 'theme-light');
+    function notify() {
+      try { window.dispatchEvent(new CustomEvent('dg-theme-updated')); } catch (e) {}
+    }
+    notify();
+    function onScheme(e) {
+      var t = localStorage.getItem('dg-theme');
+      if (t === 'light' || t === 'dark') return;
+      if (!followSys) return;
+      var d = e.matches;
+      document.body.classList.remove('theme-dark','theme-light');
+      document.body.classList.add(d ? 'theme-dark' : 'theme-light');
+      notify();
+    }
+    if (window.matchMedia && followSys) {
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      if (mq.addEventListener) mq.addEventListener('change', onScheme);
+      else mq.addListener(onScheme);
+    }
+  } catch (e) {}
+})();</script>

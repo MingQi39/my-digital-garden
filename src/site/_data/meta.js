@@ -86,6 +86,18 @@ module.exports = async (data) => {
     canvasResetHint: process.env.UI_CANVAS_RESET_HINT || "Double-click to reset",
   };
 
+  const rawBaseTheme = (process.env.BASE_THEME || "system").trim().toLowerCase();
+  const themeFollowsSystem =
+    rawBaseTheme === "system" ||
+    rawBaseTheme === "auto" ||
+    rawBaseTheme === "";
+  const baseTheme =
+    rawBaseTheme === "dark"
+      ? "dark"
+      : rawBaseTheme === "light"
+        ? "light"
+        : "light";
+
   const meta = {
     env: process.env.ELEVENTY_ENV,
     theme: process.env.THEME,
@@ -93,7 +105,8 @@ module.exports = async (data) => {
     bodyClasses: bodyClasses.join(" "),
     noteIconsSettings,
     timestampSettings,
-    baseTheme: process.env.BASE_THEME || "dark",
+    themeFollowsSystem,
+    baseTheme,
     siteName: process.env.SITE_NAME_HEADER || "Digital Garden",
     siteLogoPath: logoPath,
     mainLanguage: process.env.SITE_MAIN_LANGUAGE || "en",

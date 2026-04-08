@@ -14,6 +14,7 @@
         <link href="/styles/custom-style.css" rel="stylesheet">
     </head>
     <body class="theme-{{meta.baseTheme}} markdown-preview-view">
+        {% include "components/themeBootScript.njk" %}
         <div class="content centered">
 
             {%-if not meta.themeStyle%}

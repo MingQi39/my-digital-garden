@@ -1,8 +1,14 @@
 <div class="theme-toggle-header" x-data="{
   isDark: true,
-  init() {
+  syncFromDom() {
     const saved = localStorage.getItem('dg-theme');
-    this.isDark = saved !== 'light';
+    if (saved === 'light') this.isDark = false;
+    else if (saved === 'dark') this.isDark = true;
+    else this.isDark = document.body.classList.contains('theme-dark');
+  },
+  init() {
+    this.syncFromDom();
+    window.addEventListener('dg-theme-updated', () => this.syncFromDom());
   },
   toggle() {
     this.isDark = !this.isDark;
@@ -15,6 +21,7 @@
       document.body.classList.add('theme-light');
       localStorage.setItem('dg-theme', 'light');
     }
+    try { window.dispatchEvent(new CustomEvent('dg-theme-updated')); } catch (e) {}
   }
 }" x-init="init()">
   <button type="button" class="theme-toggle-btn" @click="toggle()" :title="isDark ? '切换为浅色主题' : '切换为深色主题'" aria-label="切换主题">
