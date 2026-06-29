@@ -45,8 +45,8 @@ body .content:not(.canvas-page) {
     min-width: 0;
 }
 
-// 宽屏：取消正文居中留白，正文紧贴文件树、右侧目录树贴右缘
-@media (min-width: 1401px) {
+// 宽屏 / 中等桌面（>1000px）：取消正文居中留白，右侧目录树贴右缘
+@media (min-width: 1001px) {
     body .content:not(.canvas-page) {
         margin-left: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
         margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
@@ -54,14 +54,34 @@ body .content:not(.canvas-page) {
     }
 
     .sidebar {
+        position: fixed !important;
         left: auto !important;
         right: var(--dg-sidebar-gap) !important;
+        top: var(--dg-sidebar-top) !important;
         width: var(--dg-sidebar-max-width);
         max-width: var(--dg-sidebar-max-width);
+        margin-top: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 0 !important;
+        border-top: none !important;
+        height: 100%;
+        transform: none !important;
+    }
+
+    .sidebar-container {
+        flex-direction: column !important;
+        gap: 0 !important;
+        height: var(--dg-sidebar-container-height);
+    }
+
+    .toc {
+        display: block !important;
     }
 
     .filetree-wrapper {
         width: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
+        justify-content: flex-end !important;
     }
 
     body.filetree-collapsed .content:not(.canvas-page) {
@@ -126,7 +146,7 @@ body.filetree-collapsed .filetree-sidebar,
         margin: 0 auto;
     }
     .filetree-header {
-        flex-direction: column;
+        flex-direction: column !important;
         align-items: center;
         gap: 0;
     }
