@@ -6,6 +6,12 @@ body {
     // 侧边栏（文件树）加宽
     --dg-filetree-width: 350px;
     --dg-filetree-min-width: 350px;
+    // 压缩正文与左右侧栏之间的留白，给右侧目录树更多空间
+    --dg-filetree-gap: 16px;
+    --dg-sidebar-gap: 12px;
+    --dg-sidebar-max-width: 380px;
+    --dg-sidebar-container-padding: 8px;
+    --dg-toc-max-height: min(75vh, 640px);
 }
 
 // 侧边栏文章链接：未选中与选中样式区分
@@ -21,8 +27,8 @@ body {
     }
 }
 
-// 侧边栏收起时的宽度（标题 + 主题切换同一行）
-$filetree-collapsed-width: 110px;
+// 侧边栏收起时的宽度（仅容纳收起按钮 + 纵向标题/主题切换）
+$filetree-collapsed-width: 48px;
 
 // 侧边栏展开/收起过渡动画
 .filetree-wrapper,
@@ -38,6 +44,35 @@ body .content:not(.canvas-page) {
     overflow-x: auto;
     min-width: 0;
 }
+
+// 宽屏：取消正文居中留白，正文紧贴文件树、右侧目录树贴右缘
+@media (min-width: 1401px) {
+    body .content:not(.canvas-page) {
+        margin-left: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
+        margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
+        max-width: none !important;
+    }
+
+    .sidebar {
+        left: auto !important;
+        right: var(--dg-sidebar-gap) !important;
+        width: var(--dg-sidebar-max-width);
+        max-width: var(--dg-sidebar-max-width);
+    }
+
+    .filetree-wrapper {
+        width: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
+    }
+
+    body.filetree-collapsed .content:not(.canvas-page) {
+        margin-left: calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)) !important;
+    }
+
+    body.filetree-collapsed .filetree-wrapper {
+        width: calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)) !important;
+    }
+}
+
 @media (max-width: 1400px) {
     body .content:not(.canvas-page) {
         max-width: var(--dg-content-max-width) !important;
@@ -46,8 +81,8 @@ body .content:not(.canvas-page) {
     // base 在 1400px 断点硬编码 margin-left:270px / max-width:calc(100vw - 300px)，
     // 对应默认 250px 文件树；加宽后需用 CSS 变量对齐，避免图谱/backlinks 侵入左侧文件树
     .sidebar {
-        margin-left: calc(var(--dg-filetree-width) + 20px) !important;
-        max-width: calc(100vw - var(--dg-filetree-width) - 50px);
+        margin-left: calc(var(--dg-filetree-width) + var(--dg-filetree-gap)) !important;
+        max-width: calc(100vw - var(--dg-filetree-width) - var(--dg-filetree-gap) - 20px);
         box-sizing: border-box;
     }
 
@@ -71,8 +106,8 @@ body .content:not(.canvas-page) {
 @media (max-width: 1400px) {
     body.filetree-collapsed {
         .sidebar {
-            margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
-            max-width: calc(100vw - #{$filetree-collapsed-width} - 50px);
+            margin-left: calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)) !important;
+            max-width: calc(100vw - #{$filetree-collapsed-width} - var(--dg-filetree-gap) - 20px);
         }
     }
 }
@@ -86,48 +121,24 @@ body.filetree-collapsed .filetree-wrapper,
 body.filetree-collapsed .filetree-sidebar,
 .filetree-wrapper.is-collapsed .filetree-sidebar {
     width: $filetree-collapsed-width !important;
-    padding: 10px 6px !important;
+    padding: 10px 0 !important;
     .filetree-toggle-btn {
-        align-self: flex-start;
-        margin: 0 0 4px;
+        margin: 0 auto;
     }
     .filetree-header {
-        flex-direction: row;
-        flex-wrap: nowrap;
-        justify-content: space-between;
+        flex-direction: column;
         align-items: center;
-        gap: 4px;
-        width: 100%;
-    }
-    .filetree-header .filetree-title-link {
-        justify-content: flex-start;
-        h1 {
-            font-size: 14px !important;
-            text-align: left;
-        }
-    }
-    .filetree-header .theme-toggle-btn {
-        width: 32px;
-        height: 32px;
+        gap: 0;
     }
     .search-button,
     > .folder {
         display: none !important;
     }
-    .filetree-header .theme-toggle-wrapper {
-        display: flex;
-        margin: 0;
-    }
 }
 body.filetree-collapsed {
     .content {
-        margin-left: max(
-            calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)),
-            min(
-                calc((100vw - var(--dg-content-max-width)) / 2),
-                calc(100vw - var(--dg-content-max-width) - var(--dg-sidebar-max-width) - var(--dg-sidebar-gap) - 20px)
-            )
-        ) !important;
+        margin-left: calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)) !important;
+        margin-right: calc(var(--dg-sidebar-max-width) + var(--dg-sidebar-gap)) !important;
     }
     .content.canvas-page {
         margin-left: calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)) !important;
@@ -141,10 +152,7 @@ body.filetree-collapsed {
     }
     body.filetree-collapsed {
         .content {
-            margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
-        }
-        .content.canvas-page {
-            margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
+            margin-right: auto !important;
         }
     }
 }
@@ -152,8 +160,16 @@ body.filetree-collapsed {
 // 主题切换按钮（侧边栏）
 .theme-toggle-wrapper {
     display: flex;
+    justify-content: center;
     flex-shrink: 0;
+    margin: 12px 0;
+}
+.filetree-header .theme-toggle-wrapper {
     margin: 0;
+}
+body.filetree-collapsed .filetree-header .theme-toggle-wrapper,
+.filetree-wrapper.is-collapsed .filetree-header .theme-toggle-wrapper {
+    margin: 12px 0;
 }
 .theme-toggle-btn {
     display: flex;
