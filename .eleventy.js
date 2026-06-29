@@ -209,6 +209,8 @@ module.exports = function(eleventyConfig) {
   // notes 下任意 drawing/ 目录：仅存放 Excalidraw 源稿与导出图，不作为独立笔记页面发布
   //（避免侧边栏、搜索、RSS 出现仅作嵌入用的图稿页；静态资源仍由 passthrough 复制）
   eleventyConfig.ignores.add("src/site/notes/**/drawing/**/*.md");
+  // Obsidian 模板目录：占位 frontmatter（如 Invalid date）不应作为站点页面发布
+  eleventyConfig.ignores.add("src/site/notes/模板/**/*.md");
 
   eleventyConfig.addDateParsing(function (dateValue) {
     if (typeof dateValue === "string") {
