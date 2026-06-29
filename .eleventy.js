@@ -205,6 +205,28 @@ function obsidianDateToIso(val) {
   return null;
 }
 
+function resolveInvalidObsidianDate(dateValue, inputPath) {
+  if (typeof dateValue !== "string") return null;
+  if (dateValue.trim().toLowerCase() !== "invalid date") return null;
+
+  if (inputPath) {
+    try {
+      const file = fs.readFileSync(inputPath, "utf8");
+      const fm = matter(file);
+      const fromModified = obsidianDateToIso(fm.data.modified);
+      if (fromModified) return fromModified;
+    } catch {
+      // fall through
+    }
+    const match = String(inputPath).match(/(\d{4}-\d{2}-\d{2})/);
+    if (match) {
+      const date = new Date(`${match[1]}T00:00:00`);
+      if (!isNaN(date.getTime())) return date;
+    }
+  }
+  return new Date();
+}
+
 module.exports = function(eleventyConfig) {
   // notes 下任意 drawing/ 目录：仅存放 Excalidraw 源稿与导出图，不作为独立笔记页面发布
   //（避免侧边栏、搜索、RSS 出现仅作嵌入用的图稿页；静态资源仍由 passthrough 复制）
@@ -213,10 +235,10 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.ignores.add("src/site/notes/模板/**/*.md");
 
   eleventyConfig.addDateParsing(function (dateValue) {
-    if (typeof dateValue === "string") {
-      return obsidianDateToIso(dateValue);
-    }
-    return undefined;
+    if (typeof dateValue !== "string") return undefined;
+    const parsed = obsidianDateToIso(dateValue);
+    if (parsed) return parsed;
+    return resolveInvalidObsidianDate(dateValue, this?.page?.inputPath);
   });
 
   // 默认 frontmatter：所有笔记默认视为已发布，无需每篇写 published: true
