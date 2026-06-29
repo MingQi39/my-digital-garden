@@ -17,10 +17,15 @@ body {
     --dg-sidebar-container-padding: 8px;
     --dg-sidebar-container-height: 92%;
 
-    // 目录树高度增加
-    --dg-toc-max-height: 480px;
+    // 目录树高度增加（min 保证可见区域，max 限制上限）
+    --dg-toc-max-height: min(560px, calc(100vh - 280px));
+    --dg-toc-min-height: 360px;
     --dg-toc-font-size: 0.85rem;
     --dg-toc-item-padding: 2px 0 2px 6px;
+
+    // 图谱略缩小，给目录树让出垂直空间
+    --dg-graph-width: 220px;
+    --dg-graph-height: 200px;
 }
 
 // 侧边栏文章链接：未选中与选中样式区分
@@ -37,7 +42,7 @@ body {
 }
 
 // 侧边栏收起时的宽度（仅展开/主题两个图标，不展示标题）
-$filetree-collapsed-width: 48px;
+$filetree-collapsed-width: 44px;
 
 // 侧边栏展开/收起过渡动画
 .filetree-wrapper,
@@ -86,7 +91,7 @@ body .content:not(.canvas-page) {
 @media (max-width: 1400px) {
     body.filetree-collapsed {
         .sidebar {
-            margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
+            margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
             max-width: calc(100vw - #{$filetree-collapsed-width} - 50px);
         }
     }
@@ -97,15 +102,20 @@ body.filetree-collapsed .filetree-wrapper,
 .filetree-wrapper.is-collapsed {
     width: $filetree-collapsed-width !important;
     min-width: $filetree-collapsed-width !important;
+    max-width: $filetree-collapsed-width !important;
 }
 body.filetree-collapsed .filetree-sidebar,
 .filetree-wrapper.is-collapsed .filetree-sidebar {
     width: $filetree-collapsed-width !important;
-    padding: 10px 6px !important;
+    min-width: $filetree-collapsed-width !important;
+    max-width: $filetree-collapsed-width !important;
+    padding: 8px 4px !important;
     align-items: center;
     .filetree-toggle-btn {
         align-self: center;
         margin: 0 0 4px;
+        width: 28px;
+        height: 28px;
     }
     .filetree-header {
         flex-direction: row;
@@ -121,8 +131,12 @@ body.filetree-collapsed .filetree-sidebar,
         display: none !important;
     }
     .filetree-header .theme-toggle-btn {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
+        i, svg {
+            width: 18px;
+            height: 18px;
+        }
     }
     .search-button,
     > .folder {
@@ -134,17 +148,12 @@ body.filetree-collapsed .filetree-sidebar,
     }
 }
 body.filetree-collapsed {
+    // 收起时正文紧贴窄栏，不再走居中 max() 逻辑
     .content {
-        margin-left: max(
-            calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)),
-            min(
-                calc((100vw - var(--dg-content-max-width)) / 2),
-                calc(100vw - var(--dg-content-max-width) - var(--dg-sidebar-max-width) - var(--dg-sidebar-gap) - 20px)
-            )
-        ) !important;
+        margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
     }
     .content.canvas-page {
-        margin-left: calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)) !important;
+        margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
     }
 }
 
@@ -152,13 +161,14 @@ body.filetree-collapsed {
     body.filetree-collapsed .filetree-wrapper,
     .filetree-wrapper.is-collapsed {
         width: $filetree-collapsed-width !important;
+        min-width: $filetree-collapsed-width !important;
     }
     body.filetree-collapsed {
         .content {
-            margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
+            margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
         }
         .content.canvas-page {
-            margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
+            margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
         }
     }
 }
@@ -231,7 +241,13 @@ body.no-filetree .content > header {
     height: 32px;
 }
 
-// 右侧目录树：长标题换行，尽量完整展示
+// 右侧目录树：长标题换行，尽量完整展示，并撑满可用高度
+.sidebar-container .toc {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
 .toc-title,
 .toc-container a {
     white-space: normal;
@@ -240,6 +256,10 @@ body.no-filetree .content > header {
     line-height: 1.45;
 }
 .toc-container {
+    flex: 1 1 auto;
+    min-height: var(--dg-toc-min-height);
+    max-height: var(--dg-toc-max-height) !important;
+    overflow-y: auto;
     scrollbar-width: thin;
 }
 
