@@ -44,11 +44,11 @@
               {% include imp %}
           {% endfor %}
            {% if meta.siteLogoPath %}
-           <a href="/" class="filetree-title-link">
+           <a href="/" class="filetree-title-link" x-show="filetreeExpanded">
                      <img class="site-logo" src="{{meta.siteLogoPath}}" alt="{{meta.siteName}}">
            </a>
            {% else %}
-           <a href="/" class="filetree-title-link">
+           <a href="/" class="filetree-title-link" x-show="filetreeExpanded">
                      <h1>{{meta.siteName}}</h1>
            </a>
            {% endif %}

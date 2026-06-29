@@ -12,6 +12,10 @@
       useDark = fallbackDark;
     document.body.classList.remove('theme-dark','theme-light');
     document.body.classList.add(useDark ? 'theme-dark' : 'theme-light');
+    var filetreeRaw = localStorage.getItem('filetreeExpanded');
+    if (filetreeRaw !== null && JSON.parse(filetreeRaw) === false) {
+      document.body.classList.add('filetree-collapsed');
+    }
     function notify() {
       try { window.dispatchEvent(new CustomEvent('dg-theme-updated')); } catch (e) {}
     }

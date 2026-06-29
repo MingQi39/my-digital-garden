@@ -6,6 +6,21 @@ body {
     // 侧边栏（文件树）加宽
     --dg-filetree-width: 350px;
     --dg-filetree-min-width: 350px;
+
+    // 缩小正文与左右侧栏之间的留白
+    --dg-filetree-gap: 36px;
+    --dg-sidebar-gap: 28px;
+    --file-margins: 20px;
+
+    // 右侧栏加宽，目录树尽量完整展示
+    --dg-sidebar-max-width: 400px;
+    --dg-sidebar-container-padding: 8px;
+    --dg-sidebar-container-height: 92%;
+
+    // 目录树高度增加
+    --dg-toc-max-height: 480px;
+    --dg-toc-font-size: 0.85rem;
+    --dg-toc-item-padding: 2px 0 2px 6px;
 }
 
 // 侧边栏文章链接：未选中与选中样式区分
@@ -100,7 +115,9 @@ body.filetree-collapsed .filetree-sidebar,
         gap: 0;
         width: 100%;
     }
-    .filetree-header .filetree-title-link {
+    .filetree-header .filetree-title-link,
+    .filetree-header h1,
+    .filetree-header .site-logo {
         display: none !important;
     }
     .filetree-header .theme-toggle-btn {
@@ -212,6 +229,18 @@ body.no-filetree .content > header {
 .theme-toggle-header .theme-toggle-btn {
     width: 32px;
     height: 32px;
+}
+
+// 右侧目录树：长标题换行，尽量完整展示
+.toc-title,
+.toc-container a {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+}
+.toc-container {
+    scrollbar-width: thin;
 }
 
 // 展开/收起按钮样式
