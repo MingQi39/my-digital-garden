@@ -15,6 +15,7 @@ const {
   userMarkdownSetup,
   userEleventySetup,
 } = require("./src/helpers/userSetup");
+const { isNoteTemplate } = require("./src/helpers/notesEleventyData");
 
 const Image = require("@11ty/eleventy-img");
 function transformImage(src, cls, alt, sizes, widths = ["500", "700", "auto"]) {
@@ -233,6 +234,13 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.ignores.add("src/site/notes/**/drawing/**/*.md");
   // Obsidian 模板目录：占位 frontmatter（如 Invalid date）不应作为站点页面发布
   eleventyConfig.ignores.add("src/site/notes/模板/**/*.md");
+
+  // 侧边栏 / 搜索 / RSS 依赖 collections.note；Obsidian 同步可能删掉 notes.11tydata.js，此处兜底
+  eleventyConfig.addCollection("note", (collectionApi) => {
+    return collectionApi.getAllSorted().filter((item) =>
+      isNoteTemplate(item.inputPath)
+    );
+  });
 
   eleventyConfig.addDateParsing(function (dateValue) {
     if (typeof dateValue !== "string") return undefined;
