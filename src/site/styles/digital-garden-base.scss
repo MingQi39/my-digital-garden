@@ -661,6 +661,32 @@ body:has(.content.canvas-page) .sidebar {
         font-size: var(--dg-filetree-title-size) !important;
         flex-shrink: 0;
     }
+    .filetree-header {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-shrink: 0;
+        width: 100%;
+        min-width: 0;
+    }
+    .filetree-title-link {
+        text-decoration: none;
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        h1 {
+            margin: 0;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
     .site-logo {
         height: var(--dg-filetree-logo-height);
         width: auto;
@@ -770,15 +796,37 @@ body.has-navbar .content {
         display: flex;
         align-items: center;
         cursor: pointer;
+        flex: 1;
+        min-width: 0;
+
+        .filetree-header {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
+            gap: 8px;
+        }
+        .filetree-title-link {
+            text-decoration: none;
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            h1 {
+                margin: 0 !important;
+                line-height: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
 
         > span {
             display: flex;
             align-items: center;
-        }
-
-        h1 {
-            margin: 0 !important;
-            line-height: 1;
         }
 
         .site-logo {

@@ -39,21 +39,23 @@
           <i data-lucide="panel-left-close" x-show="filetreeExpanded" style="display: none;"></i>
           <i data-lucide="panel-left-open" x-show="!filetreeExpanded" style="display: none;"></i>
         </button>
-        {% for imp in dynamics.filetree.beforeTitle %}
-            {% include imp %}
-        {% endfor %}
-         {% if meta.siteLogoPath %}
-         <a href="/" style="text-decoration: none; display: flex; justify-content: center;">
-                   <img class="site-logo" src="{{meta.siteLogoPath}}" alt="{{meta.siteName}}">
-         </a>
-         {% else %}
-         <a href="/" style="text-decoration: none; text-align: center;">
-                   <h1 style="text-align:center;">{{meta.siteName}}</h1>
-         </a>
-         {% endif %}
-         {% for imp in dynamics.filetree.afterTitle %}
-            {% include imp %}
-        {% endfor %}
+        <div class="filetree-header">
+          {% for imp in dynamics.filetree.beforeTitle %}
+              {% include imp %}
+          {% endfor %}
+           {% if meta.siteLogoPath %}
+           <a href="/" class="filetree-title-link">
+                     <img class="site-logo" src="{{meta.siteLogoPath}}" alt="{{meta.siteName}}">
+           </a>
+           {% else %}
+           <a href="/" class="filetree-title-link">
+                     <h1>{{meta.siteName}}</h1>
+           </a>
+           {% endif %}
+           {% for imp in dynamics.filetree.afterTitle %}
+              {% include imp %}
+          {% endfor %}
+        </div>
         {% if settings.dgEnableSearch === true%}
             {% include "components/searchButton.njk" %}
         {%endif%}

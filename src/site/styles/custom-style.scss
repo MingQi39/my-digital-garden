@@ -21,8 +21,8 @@ body {
     }
 }
 
-// 侧边栏收起时的宽度
-$filetree-collapsed-width: 48px;
+// 侧边栏收起时的宽度（标题 + 主题切换同一行）
+$filetree-collapsed-width: 110px;
 
 // 侧边栏展开/收起过渡动画
 .filetree-wrapper,
@@ -42,6 +42,39 @@ body .content:not(.canvas-page) {
     body .content:not(.canvas-page) {
         max-width: var(--dg-content-max-width) !important;
     }
+
+    // base 在 1400px 断点硬编码 margin-left:270px / max-width:calc(100vw - 300px)，
+    // 对应默认 250px 文件树；加宽后需用 CSS 变量对齐，避免图谱/backlinks 侵入左侧文件树
+    .sidebar {
+        margin-left: calc(var(--dg-filetree-width) + 20px) !important;
+        max-width: calc(100vw - var(--dg-filetree-width) - 50px);
+        box-sizing: border-box;
+    }
+
+    .sidebar-container {
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: hidden;
+    }
+
+    .graph,
+    #graph-component {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .backlinks {
+        min-width: 0;
+    }
+}
+
+@media (max-width: 1400px) {
+    body.filetree-collapsed {
+        .sidebar {
+            margin-left: calc(#{$filetree-collapsed-width} + 20px) !important;
+            max-width: calc(100vw - #{$filetree-collapsed-width} - 50px);
+        }
+    }
 }
 
 // 侧边栏收起状态（body class 由 Alpine x-effect 设置，wrapper 的 :class 作为备用）
@@ -53,15 +86,37 @@ body.filetree-collapsed .filetree-wrapper,
 body.filetree-collapsed .filetree-sidebar,
 .filetree-wrapper.is-collapsed .filetree-sidebar {
     width: $filetree-collapsed-width !important;
-    padding: 10px 0 !important;
+    padding: 10px 6px !important;
     .filetree-toggle-btn {
-        margin: 0 auto;
+        align-self: flex-start;
+        margin: 0 0 4px;
     }
-    > a,
-    > h1,
+    .filetree-header {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 4px;
+        width: 100%;
+    }
+    .filetree-header .filetree-title-link {
+        justify-content: flex-start;
+        h1 {
+            font-size: 14px !important;
+            text-align: left;
+        }
+    }
+    .filetree-header .theme-toggle-btn {
+        width: 32px;
+        height: 32px;
+    }
     .search-button,
     > .folder {
         display: none !important;
+    }
+    .filetree-header .theme-toggle-wrapper {
+        display: flex;
+        margin: 0;
     }
 }
 body.filetree-collapsed {
@@ -97,8 +152,8 @@ body.filetree-collapsed {
 // 主题切换按钮（侧边栏）
 .theme-toggle-wrapper {
     display: flex;
-    justify-content: center;
-    margin: 12px 0;
+    flex-shrink: 0;
+    margin: 0;
 }
 .theme-toggle-btn {
     display: flex;

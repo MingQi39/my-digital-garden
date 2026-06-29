@@ -29,6 +29,15 @@ function relPathToPermalinkPath(relPath) {
     .join("/");
 }
 
+const EXCLUDED_NOTE_BASENAMES = new Set(["AGENTS.md", "AI_CONFIG.md"]);
+
+function isExcludedFromSite(inputPath) {
+  const p = String(inputPath || "").replace(/\\/g, "/");
+  if (p.includes("/009.AI知识库/")) return true;
+  const basename = p.split("/").pop() || "";
+  return EXCLUDED_NOTE_BASENAMES.has(basename);
+}
+
 function isNoteTemplate(inputPath) {
   const p = String(inputPath || "").replace(/\\/g, "/");
   return (
@@ -36,7 +45,8 @@ function isNoteTemplate(inputPath) {
     p.endsWith(".md") &&
     !p.includes("/drawing/") &&
     !p.includes("/模板/") &&
-    !p.endsWith("/notes/index.md")
+    !p.endsWith("/notes/index.md") &&
+    !isExcludedFromSite(p)
   );
 }
 
@@ -58,5 +68,6 @@ function getNotesDirectoryData() {
 module.exports = {
   getNotesDirectoryData,
   isNoteTemplate,
+  isExcludedFromSite,
   relPathToPermalinkPath,
 };
