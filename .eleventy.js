@@ -234,8 +234,10 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.ignores.add("src/site/notes/**/drawing/**/*.md");
   // Obsidian 模板目录：占位 frontmatter（如 Invalid date）不应作为站点页面发布
   eleventyConfig.ignores.add("src/site/notes/模板/**/*.md");
-  // AI 知识库工作区（OpenCode 配置、原始素材等）不作为站点页面发布
-  eleventyConfig.ignores.add("src/site/notes/009.AI知识库/**");
+  // AI 知识库：仅发布 raw/、wiki/；OpenCode 配置、脚本、根目录索引等不发布
+  eleventyConfig.ignores.add("src/site/notes/009.AI知识库/.opencode/**");
+  eleventyConfig.ignores.add("src/site/notes/009.AI知识库/scripts/**");
+  eleventyConfig.ignores.add("src/site/notes/009.AI知识库/*.md");
   eleventyConfig.ignores.add("src/site/notes/**/AGENTS.md");
   eleventyConfig.ignores.add("src/site/notes/**/AI_CONFIG.md");
 

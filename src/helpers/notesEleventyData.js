@@ -30,10 +30,23 @@ function relPathToPermalinkPath(relPath) {
 }
 
 const EXCLUDED_NOTE_BASENAMES = new Set(["AGENTS.md", "AI_CONFIG.md"]);
+const AI_KB_PUBLISH_PREFIXES = [
+  "/009.AI知识库/raw/",
+  "/009.AI知识库/wiki/",
+];
+
+function isAiKnowledgeBasePath(inputPath) {
+  return String(inputPath || "").replace(/\\/g, "/").includes("/009.AI知识库/");
+}
+
+function isAiKnowledgeBasePublishable(inputPath) {
+  const p = String(inputPath || "").replace(/\\/g, "/");
+  return AI_KB_PUBLISH_PREFIXES.some((prefix) => p.includes(prefix));
+}
 
 function isExcludedFromSite(inputPath) {
   const p = String(inputPath || "").replace(/\\/g, "/");
-  if (p.includes("/009.AI知识库/")) return true;
+  if (isAiKnowledgeBasePath(p) && !isAiKnowledgeBasePublishable(p)) return true;
   const basename = p.split("/").pop() || "";
   return EXCLUDED_NOTE_BASENAMES.has(basename);
 }
@@ -55,6 +68,7 @@ function getNotesDirectoryData() {
     layout: "layouts/note.njk",
     tags: ["note"],
     eleventyComputed: {
+      eleventyExclude: (data) => isExcludedFromSite(data.page?.inputPath),
       mindmapPlugin: (data) => data["mindmap-plugin"] || data.mindmapPlugin || "",
     },
     permalink: (data) => {
