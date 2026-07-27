@@ -16,7 +16,7 @@ env:
 jobs:
   deploy:
     name: Build and deploy notes
-    runs-on: [self-hosted, macOS, deploy]
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
@@ -36,12 +36,15 @@ jobs:
           SITE_BASE_URL: https://notes.houmq.cn
 
       - name: Deploy to server
-        shell: bash
         run: |
           set -euo pipefail
-          SSH_KEY_PATH="$HOME/.ssh/id_ed25519_personal"
-          test -r "$SSH_KEY_PATH"
+          install -m 600 /dev/null ~/.deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
           rsync -avz --delete \
-            -e "ssh -i $SSH_KEY_PATH -o IdentitiesOnly=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=40" \
+            -e "ssh -i ~/.deploy_key -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes" \
             dist/ \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
