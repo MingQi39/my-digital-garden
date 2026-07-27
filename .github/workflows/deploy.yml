@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: notes-deploy
+  cancel-in-progress: true
+
+env:
+  SITE_BASE_URL: https://notes.houmq.cn
+  DEPLOY_PATH: /var/www/my-digital-garden/dist
+
+jobs:
+  deploy:
+    name: Build and deploy notes
+    runs-on: [self-hosted, macOS, deploy]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+        env:
+          SITE_BASE_URL: https://notes.houmq.cn
+
+      - name: Deploy to server
+        shell: bash
+        run: |
+          set -euo pipefail
+          SSH_KEY_PATH="$HOME/.ssh/id_ed25519_personal"
+          test -r "$SSH_KEY_PATH"
+          rsync -avz --delete \
+            -e "ssh -i $SSH_KEY_PATH -o IdentitiesOnly=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=40" \
+            dist/ \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
