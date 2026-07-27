@@ -40,10 +40,9 @@ jobs:
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
-          rsync -avz --delete \
-            -e "ssh -i ~/.deploy_key -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes" \
-            dist/ \
-            "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+          SSH="ssh -i ~/.deploy_key -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes"
+          tar -C dist -czf - . | $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "mkdir -p ${DEPLOY_PATH} && rm -rf ${DEPLOY_PATH:?}/* && tar -xzf - -C ${DEPLOY_PATH}"
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
