@@ -3,6 +3,9 @@ body {
       ADD YOUR CUSTOM STYLING HERE. (INSIDE THE body {...} section.)
       IT WILL TAKE PRECEDENCE OVER THE STYLING IN THE STYLE.CSS FILE.
    ***/
+    --dg-reading-progress-color: #e07a5f;
+    --dg-reading-progress-height: 3px;
+
     // 侧边栏（文件树）加宽
     --dg-filetree-width: 350px;
     --dg-filetree-min-width: 350px;
@@ -221,6 +224,30 @@ body.theme-light .navbar {
 }
 body.theme-light .theme-toggle-btn:hover {
     background: rgba(0, 0, 0, 0.08);
+}
+
+// 文章阅读进度条
+.dg-reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: var(--dg-reading-progress-height);
+    z-index: 1000;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.dg-reading-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--dg-reading-progress-color);
+    transition: width 0.12s ease-out;
+    border-radius: 0 2px 2px 0;
+}
+
+body.has-navbar .dg-reading-progress {
+    top: var(--dg-navbar-height);
 }
 
 // 主题切换（内容区 header，仅在无侧边栏时显示）

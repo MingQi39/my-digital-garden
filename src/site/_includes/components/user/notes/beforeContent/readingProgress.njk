@@ -1,0 +1,55 @@
+<div id="dg-reading-progress" class="dg-reading-progress" aria-hidden="true">
+  <div class="dg-reading-progress-bar"></div>
+</div>
+<script>
+  (function () {
+    var main = document.querySelector("main.content");
+    var bar = document.querySelector(".dg-reading-progress-bar");
+    var container = document.getElementById("dg-reading-progress");
+    if (!main || !bar || !container) return;
+
+    if (main.classList.contains("canvas-page")) {
+      container.remove();
+      return;
+    }
+
+    var ticking = false;
+
+    function syncGeometry() {
+      var rect = main.getBoundingClientRect();
+      container.style.left = rect.left + "px";
+      container.style.width = rect.width + "px";
+    }
+
+    function getProgress() {
+      var total = main.offsetHeight - window.innerHeight;
+      if (total <= 0) return 100;
+      var scrolled = window.scrollY - main.offsetTop;
+      return Math.min(100, Math.max(0, (scrolled / total) * 100));
+    }
+
+    function update() {
+      syncGeometry();
+      if (main.classList.contains("dg-mindmap-mode") && !main.classList.contains("dg-show-raw-content")) {
+        bar.style.width = "0%";
+        container.style.opacity = "0";
+        return;
+      }
+      container.style.opacity = "1";
+      bar.style.width = getProgress() + "%";
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        update();
+        ticking = false;
+      });
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    update();
+  })();
+</script>
