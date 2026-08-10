@@ -61,6 +61,10 @@ jobs:
             --exclude .git \
             -e "$RSYNC_SSH" \
             ./ "${REMOTE}:${REMOTE_BUILD_DIR}/"
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
 
       - name: Build and publish on server
         timeout-minutes: 45
