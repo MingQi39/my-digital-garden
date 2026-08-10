@@ -58,10 +58,9 @@ jobs:
             $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
               "REPO_PATH='${REPO_PATH}' REPO_URL='${REPO_URL}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'REMOTE'
           set -euo pipefail
-          REPO_PATH="${REPO_PATH:-/var/www/my-digital-garden}"
-          REPO_SRC_PATH="${REPO_SRC_PATH:-$HOME/my-digital-garden-src}"
           REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
           SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
+          BUILD_REPO="${BUILD_REPO:-$HOME/my-digital-garden}"
           DEPLOY_PATH="${DEPLOY_PATH:-/var/www/my-digital-garden/dist}"
 
           ensure_node() {
