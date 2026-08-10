@@ -23,8 +23,46 @@ jobs:
     permissions:
       contents: read
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync source to server
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          install -m 600 /dev/null ~/.deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
+
+          SSH_OPTS="-i ~/.deploy_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o IdentitiesOnly=yes \
+            -o ConnectTimeout=30 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=8"
+          SSH="ssh ${SSH_OPTS}"
+          RSYNC_SSH="ssh ${SSH_OPTS}"
+          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
+          BUILD_DIR="\$HOME/${BUILD_REPO}"
+
+          HAS_SOURCE="$($SSH "$REMOTE" "[ -f ${BUILD_DIR}/package.json ] && echo yes || echo no")"
+          if [ "$HAS_SOURCE" != "yes" ]; then
+            echo "no local source yet, VPS step will bootstrap from mirror"
+            exit 0
+          fi
+
+          echo "=== incremental rsync source ==="
+          rsync -a --delete --info=stats2 \
+            --exclude node_modules \
+            --exclude dist \
+            --exclude .git \
+            -e "$RSYNC_SSH" \
+            ./ "${REMOTE}:${BUILD_REPO}/"
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
       - name: Build and publish on server
-        timeout-minutes: 55
+        timeout-minutes: 45
         run: |
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
@@ -38,17 +76,15 @@ jobs:
             -o ServerAliveCountMax=8"
 
           $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "BUILD_REPO='${BUILD_REPO}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' REPO_URL='${REPO_URL}' bash -s" <<'REMOTE'
+            "BUILD_REPO='${BUILD_REPO}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'REMOTE'
           set -euo pipefail
           BUILD_REPO="${BUILD_REPO:-my-digital-garden}"
           SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
           DEPLOY_PATH="${DEPLOY_PATH:-/var/www/my-digital-garden/dist}"
-          REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
           BUILD_DIR="$HOME/$BUILD_REPO"
           ARCHIVE_MIRRORS=(
             "https://ghfast.top/https://github.com/MingQi39/my-digital-garden/archive/refs/heads/main.tar.gz"
             "https://mirror.ghproxy.com/https://github.com/MingQi39/my-digital-garden/archive/refs/heads/main.tar.gz"
-            "https://github.com/MingQi39/my-digital-garden/archive/refs/heads/main.tar.gz"
           )
 
           log() { echo "[$(date -u +%H:%M:%S)] $*"; }
@@ -67,7 +103,7 @@ jobs:
             exit 1
           }
 
-          sync_source() {
+          bootstrap_source() {
             local staging="${BUILD_DIR}.staging.$$"
             mkdir -p "$staging"
             trap 'rm -rf "$staging"' EXIT
@@ -95,9 +131,16 @@ jobs:
               log "download failed for $url"
               rm -rf "$staging"/*
             done
-
-            log "ERROR: cannot download source archive (check VPS outbound network)"
+            log "ERROR: cannot download source archive"
             exit 1
+          }
+
+          ensure_source() {
+            if [ -f "$BUILD_DIR/package.json" ]; then
+              log "use synced source at $BUILD_DIR"
+              return 0
+            fi
+            bootstrap_source
           }
 
           npm_install() {
@@ -126,12 +169,11 @@ jobs:
             fi
             log "dist published to $DEPLOY_PATH"
             du -sh "$DEPLOY_PATH"
-            echo "files: $(find "$DEPLOY_PATH" -type f | wc -l)"
             test -f "$DEPLOY_PATH/index.html"
           }
 
           ensure_node
-          sync_source
+          ensure_source
           npm_install
 
           log "npm run build"
