@@ -326,6 +326,8 @@ body.no-filetree .content > header {
         }
         border-radius: 4px;
         text-decoration: none;
+        border-left: 2px solid var(--text-accent);
+        padding-left: 4px;
     }
 }
 
@@ -347,6 +349,34 @@ body.no-filetree .content > header {
     &:hover {
         background: var(--interactive-hover, rgba(255, 255, 255, 0.08));
         color: var(--text-normal);
+    }
+}
+
+// Obsidian base 给 td/th 加了 overflow:hidden + text-overflow:ellipsis，
+// 窄列时长文本会被裁成「…」；阅读站应完整展示并可换行。
+main.content {
+    --table-white-space: normal;
+    --table-column-max-width: none;
+
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        table-layout: auto;
+        word-break: break-word;
+    }
+
+    th,
+    td {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: unset !important;
+        max-width: none !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 }
 

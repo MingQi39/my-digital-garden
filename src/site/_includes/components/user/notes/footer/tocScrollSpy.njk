@@ -25,7 +25,15 @@
 
     var activeLink = null;
     var ticking = false;
-    var topOffset = 96;
+
+    function scrollTocToLink(link) {
+      var linkRect = link.getBoundingClientRect();
+      var containerRect = tocRoot.getBoundingClientRect();
+      var offset = linkRect.top - containerRect.top + tocRoot.scrollTop;
+      var target = offset - tocRoot.clientHeight / 2 + link.offsetHeight / 2;
+      var maxScroll = Math.max(0, tocRoot.scrollHeight - tocRoot.clientHeight);
+      tocRoot.scrollTop = Math.max(0, Math.min(target, maxScroll));
+    }
 
     function setActive(next) {
       if (activeLink === next) return;
@@ -33,28 +41,41 @@
       activeLink = next;
       if (activeLink) {
         activeLink.classList.add("is-active");
-        var container = tocRoot;
-        var linkTop = activeLink.offsetTop;
-        var linkBottom = linkTop + activeLink.offsetHeight;
-        if (linkTop < container.scrollTop + 8) {
-          container.scrollTop = Math.max(0, linkTop - 8);
-        } else if (linkBottom > container.scrollTop + container.clientHeight - 8) {
-          container.scrollTop = linkBottom - container.clientHeight + 8;
-        }
+        scrollTocToLink(activeLink);
       }
     }
 
     function updateActive() {
-      var current = items[0] ? items[0].link : null;
+      var bandTop = 96;
+      var bandBottom = Math.max(bandTop + 80, window.innerHeight * 0.42);
+      var current = items[0];
+      var inBand = null;
+      var inBandTop = Infinity;
+
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 48) {
+        setActive(items[items.length - 1].link);
+        return;
+      }
+
       for (var i = 0; i < items.length; i++) {
         var rect = items[i].heading.getBoundingClientRect();
-        if (rect.top <= topOffset) {
-          current = items[i].link;
-        } else {
-          break;
+        if (rect.top >= bandTop && rect.top <= bandBottom && rect.top < inBandTop) {
+          inBand = items[i];
+          inBandTop = rect.top;
         }
       }
-      setActive(current);
+
+      if (inBand) {
+        current = inBand;
+      } else {
+        for (var j = 0; j < items.length; j++) {
+          if (items[j].heading.getBoundingClientRect().top <= bandTop) {
+            current = items[j];
+          }
+        }
+      }
+
+      setActive(current.link);
     }
 
     function onScroll() {
