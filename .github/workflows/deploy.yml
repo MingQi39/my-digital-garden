@@ -54,7 +54,6 @@ jobs:
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=4"
 
-          # Prefer server-side build when the VPS already has git + node.
           if $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "test -d '${REPO_PATH}/.git' && command -v node >/dev/null 2>&1"; then
             echo "=== server-side build ==="
             $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
@@ -62,6 +61,7 @@ jobs:
           set -euo pipefail
           REPO_PATH="${REPO_PATH:-/var/www/my-digital-garden}"
           SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
+          export PATH="$HOME/.local/bin:$PATH"
           cd "$REPO_PATH"
           if [ -s "$HOME/.nvm/nvm.sh" ]; then
             # shellcheck disable=SC1090
@@ -78,12 +78,11 @@ jobs:
             exit 0
           fi
 
-          echo "=== atomic tarball deploy (fallback) ==="
-          echo "Tip: run scripts/deploy-bootstrap.sh on the VPS once to enable faster server-side builds."
+          echo "=== compressed tarball deploy (fallback) ==="
           STAGING="${DEPLOY_PATH}.staging.$$"
           $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p '$STAGING'"
 
-          tar -C dist -cf - . | $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "tar -xf - -C '$STAGING'"
+          tar -C dist -czf - . | $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "tar -xzf - -C '$STAGING'"
 
           $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" bash -s <<REMOTE
           set -euo pipefail
@@ -103,7 +102,75 @@ jobs:
           echo "=== deploy complete ==="
           du -sh "\$DEPLOY_PATH"
           REMOTE
+
+          echo "=== best-effort server bootstrap (repo + node) ==="
+          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "REPO_PATH='${REPO_PATH}' REPO_URL='${REPO_URL}' bash -s" <<'REMOTE' || true
+          set -euo pipefail
+          REPO_PATH="${REPO_PATH:-/var/www/my-digital-garden}"
+          REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
+          export PATH="$HOME/.local/bin:$PATH"
+
+          if [ -d "$REPO_PATH/.git" ]; then
+            echo "repo already present"
+          else
+            parent="$(dirname "$REPO_PATH")"
+            mkdir -p "$parent"
+            scratch="$(mktemp -d "${parent}/.repo-bootstrap.XXXXXX")"
+            git clone --depth 1 --branch main "$REPO_URL" "$scratch"
+            if [ ! -e "$REPO_PATH" ]; then
+              mv "$scratch" "$REPO_PATH"
+            else
+              shopt -s dotglob
+              for item in "$scratch"/*; do
+                base="$(basename "$item")"
+                if [ "$base" = "dist" ] && [ -d "$REPO_PATH/dist" ]; then
+                  continue
+                fi
+                rm -rf "$REPO_PATH/$base"
+                mv "$item" "$REPO_PATH/$base"
+              done
+              shopt -u dotglob
+              rm -rf "$scratch"
+            fi
+            echo "repo bootstrapped at $REPO_PATH"
+          fi
+
+          if command -v node >/dev/null 2>&1; then
+            echo "node: $(node -v)"
+            exit 0
+          fi
+
+          NODE_VERSION="${NODE_VERSION:-22.17.1}"
+          ARCH="${NODE_ARCH:-linux-x64}"
+          PREFIX="${NODE_PREFIX:-$HOME/.local}"
+          TARBALL="node-v${NODE_VERSION}-${ARCH}.tar.xz"
+          tmpdir="$(mktemp -d)"
+          for url in \
+            "https://npmmirror.com/mirrors/node/v${NODE_VERSION}/${TARBALL}" \
+            "https://nodejs.org/dist/v${NODE_VERSION}/${TARBALL}"; do
+            echo "trying $url"
+            if curl -fsSL --connect-timeout 30 --max-time 900 "$url" -o "$tmpdir/$TARBALL"; then
+              mkdir -p "$PREFIX"
+              tar -xJf "$tmpdir/$TARBALL" -C "$PREFIX" --strip-components=1
+              export PATH="$PREFIX/bin:$PATH"
+              grep -qs '\.local/bin' "$HOME/.bashrc" 2>/dev/null || \
+                echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+              echo "node: $(node -v)"
+              rm -rf "$tmpdir"
+              exit 0
+            fi
+          done
+          rm -rf "$tmpdir"
+          echo "WARN: node install skipped (mirrors unreachable)"
+          REMOTE
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+      - name: Verify live site
+        run: |
+          set -euo pipefail
+          curl -fsSI "$SITE_BASE_URL/" | grep -E '^HTTP/.* 200'
+          curl -fsSI "$SITE_BASE_URL/notes/002.AI/009.赋范%20AI/005.大模型%20RAG%20入门/001.大模型%20RAG%20入门基础架构介绍/" | grep -E '^HTTP/.* 200'
