@@ -91,9 +91,6 @@ jobs:
             echo "node: $(node -v)"
           }
 
-          BUILD_REPO="${BUILD_REPO:-$HOME/my-digital-garden}"
-          DEPLOY_PATH="${DEPLOY_PATH:-/var/www/my-digital-garden/dist}"
-
           ensure_repo() {
             if [ -d "$BUILD_REPO/.git" ]; then
               echo "=== build repo exists: $BUILD_REPO ==="
