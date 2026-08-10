@@ -4,7 +4,8 @@
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
-REPO_PATH="${REPO_PATH:-/var/www/my-digital-garden}"
+BUILD_REPO="${BUILD_REPO:-$HOME/my-digital-garden}"
+DEPLOY_PATH="${DEPLOY_PATH:-/var/www/my-digital-garden/dist}"
 SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
 
 ensure_node() {
@@ -36,25 +37,27 @@ ensure_node() {
 }
 
 ensure_repo() {
-  if [ -d "$REPO_PATH/.git" ]; then
-    echo "Repo already exists at $REPO_PATH"
+  if [ -d "$BUILD_REPO/.git" ]; then
+    echo "Build repo already exists at $BUILD_REPO"
     return 0
   fi
-  echo "=== clone repo ==="
-  mkdir -p "$(dirname "$REPO_PATH")"
-  if [ -e "$REPO_PATH" ]; then
-    backup="${REPO_PATH}.bak.$(date +%s)"
-    echo "moving existing path to $backup"
-    mv "$REPO_PATH" "$backup"
-  fi
-  git clone --depth 1 --branch main "$REPO_URL" "$REPO_PATH"
+  echo "=== clone repo to $BUILD_REPO ==="
+  mkdir -p "$(dirname "$BUILD_REPO")"
+  rm -rf "$BUILD_REPO"
+  git clone --depth 1 --branch main "$REPO_URL" "$BUILD_REPO"
+}
+
+publish_dist() {
+  mkdir -p "$DEPLOY_PATH"
+  rsync -a --delete dist/ "$DEPLOY_PATH/"
 }
 
 ensure_node
 ensure_repo
-cd "$REPO_PATH"
+cd "$BUILD_REPO"
 
 npm config set registry https://registry.npmmirror.com
 npm ci
 SITE_BASE_URL="$SITE_BASE_URL" npm run build
-echo "Bootstrap done. dist: $REPO_PATH/dist"
+publish_dist
+echo "Bootstrap done. dist: $DEPLOY_PATH"

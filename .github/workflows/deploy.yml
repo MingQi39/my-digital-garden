@@ -56,11 +56,13 @@ jobs:
 
           server_build() {
             $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
-              "REPO_PATH='${REPO_PATH}' REPO_URL='${REPO_URL}' SITE_BASE_URL='${SITE_BASE_URL}' bash -s" <<'REMOTE'
+              "REPO_PATH='${REPO_PATH}' REPO_URL='${REPO_URL}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'REMOTE'
           set -euo pipefail
           REPO_PATH="${REPO_PATH:-/var/www/my-digital-garden}"
+          REPO_SRC_PATH="${REPO_SRC_PATH:-$HOME/my-digital-garden-src}"
           REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
           SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
+          DEPLOY_PATH="${DEPLOY_PATH:-/var/www/my-digital-garden/dist}"
 
           ensure_node() {
             export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
@@ -90,21 +92,19 @@ jobs:
             echo "node: $(node -v)"
           }
 
+          BUILD_REPO="${BUILD_REPO:-$HOME/my-digital-garden}"
+          DEPLOY_PATH="${DEPLOY_PATH:-/var/www/my-digital-garden/dist}"
+
           ensure_repo() {
-            if [ -d "$REPO_PATH/.git" ]; then
-              echo "=== repo exists: $REPO_PATH ==="
+            if [ -d "$BUILD_REPO/.git" ]; then
+              echo "=== build repo exists: $BUILD_REPO ==="
               return 0
             fi
-            echo "=== bootstrap: clone repo ==="
-            parent="$(dirname "$REPO_PATH")"
-            mkdir -p "$parent"
-            if [ -e "$REPO_PATH" ]; then
-              backup="${REPO_PATH}.bak.$(date +%s)"
-              echo "moving existing path to $backup"
-              mv "$REPO_PATH" "$backup"
-            fi
+            echo "=== bootstrap: clone repo to $BUILD_REPO ==="
+            mkdir -p "$(dirname "$BUILD_REPO")"
+            rm -rf "$BUILD_REPO"
             for attempt in 1 2 3; do
-              if git clone --depth 1 --branch main "$REPO_URL" "$REPO_PATH"; then
+              if git clone --depth 1 --branch main "$REPO_URL" "$BUILD_REPO"; then
                 return 0
               fi
               echo "git clone attempt $attempt failed, retrying..."
@@ -114,10 +114,19 @@ jobs:
             exit 1
           }
 
+          publish_dist() {
+            mkdir -p "$DEPLOY_PATH"
+            rsync -a --delete dist/ "$DEPLOY_PATH/"
+            echo "=== dist published to $DEPLOY_PATH ==="
+            du -sh "$DEPLOY_PATH"
+            echo "files: $(find "$DEPLOY_PATH" -type f | wc -l)"
+            test -f "$DEPLOY_PATH/index.html"
+          }
+
           ensure_node
           ensure_repo
 
-          cd "$REPO_PATH"
+          cd "$BUILD_REPO"
           echo "=== git sync ==="
           git fetch origin main
           git reset --hard origin/main
@@ -131,6 +140,7 @@ jobs:
           du -sh dist
           echo "files: $(find dist -type f | wc -l)"
           test -f dist/index.html
+          publish_dist
           REMOTE
           }
 
@@ -162,12 +172,9 @@ jobs:
             rm -rf "\$STAGING"
             exit 1
           fi
-          rm -rf "\${DEPLOY_PATH}.old"
-          if [ -d "\$DEPLOY_PATH" ]; then
-            mv "\$DEPLOY_PATH" "\${DEPLOY_PATH}.old"
-          fi
-          mv "\$STAGING" "\$DEPLOY_PATH"
-          rm -rf "\${DEPLOY_PATH}.old"
+          mkdir -p "\$DEPLOY_PATH"
+          rsync -a --delete "\$STAGING"/ "\$DEPLOY_PATH"/
+          rm -rf "\$STAGING"
           echo "=== deploy complete ==="
           du -sh "\$DEPLOY_PATH"
           REMOTE
