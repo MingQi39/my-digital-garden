@@ -30,7 +30,7 @@ jobs:
           install -m 600 /dev/null ~/.deploy_key
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
 
-          SSH="ssh -tt -i ~/.deploy_key \
+          SSH="ssh -i ~/.deploy_key \
             -o StrictHostKeyChecking=accept-new \
             -o IdentitiesOnly=yes \
             -o ConnectTimeout=30 \
