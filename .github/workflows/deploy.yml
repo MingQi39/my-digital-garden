@@ -72,23 +72,43 @@ jobs:
             echo "node: $(node -v)"
           }
 
+          REPO_MIRROR="${REPO_MIRROR:-https://gitclone.com/github.com/MingQi39/my-digital-garden.git}"
+
           ensure_repo() {
-            if [ -d "$BUILD_REPO/.git" ]; then
+            if [ -d "$BUILD_REPO/.git" ] && git -C "$BUILD_REPO" rev-parse HEAD >/dev/null 2>&1; then
               echo "=== build repo exists: $BUILD_REPO ==="
               return 0
             fi
             echo "=== bootstrap: clone repo to $BUILD_REPO ==="
             mkdir -p "$(dirname "$BUILD_REPO")"
             rm -rf "$BUILD_REPO"
-            for attempt in 1 2 3; do
-              if git clone --depth 1 --branch main "$REPO_URL" "$BUILD_REPO"; then
-                return 0
-              fi
-              echo "git clone attempt $attempt failed, retrying..."
-              sleep 5
+            for url in "$REPO_MIRROR" "$REPO_URL"; do
+              echo "try clone: $url"
+              for attempt in 1 2 3; do
+                if git clone --depth 1 --branch main "$url" "$BUILD_REPO"; then
+                  return 0
+                fi
+                echo "git clone attempt $attempt failed for $url, retrying..."
+                rm -rf "$BUILD_REPO"
+                sleep 5
+              done
             done
-            echo "ERROR: git clone failed after 3 attempts (check VPS access to github.com)"
+            echo "ERROR: git clone failed (tried mirror + github.com)"
             exit 1
+          }
+
+          git_sync() {
+            cd "$BUILD_REPO"
+            echo "=== git sync ==="
+            git remote set-url origin "$REPO_MIRROR" 2>/dev/null || true
+            if git fetch --depth 1 origin main; then
+              git reset --hard FETCH_HEAD
+              return 0
+            fi
+            echo "mirror fetch failed, trying github.com..."
+            git remote set-url origin "$REPO_URL"
+            git fetch --depth 1 origin main
+            git reset --hard origin/main
           }
 
           publish_dist() {
@@ -109,11 +129,7 @@ jobs:
 
           ensure_node
           ensure_repo
-
-          cd "$BUILD_REPO"
-          echo "=== git sync ==="
-          git fetch origin main
-          git reset --hard origin/main
+          git_sync
 
           echo "=== npm ci & build ==="
           npm config set registry https://registry.npmmirror.com
