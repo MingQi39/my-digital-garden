@@ -854,17 +854,27 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/site/notes");
   eleventyConfig.addPassthroughCopy("src/site/scripts");
 
-  // passthrough 会复制 notes 下全部文件；删除输出中的 drawing/*.md，避免源稿可通过静态 URL 访问（图仍保留 .svg 等）
+  // passthrough 会复制 notes 下全部文件；构建后清理 dist/notes 中不应公开访问的源稿与杂项
   eleventyConfig.on("eleventy.after", () => {
     try {
       const distNotes = path.join(process.cwd(), "dist/notes");
       if (!fs.existsSync(distNotes)) return;
-      for (const f of globSync("**/drawing/**/*.md", {
-        cwd: distNotes,
-        absolute: true,
-        nodir: true,
-      })) {
-        fs.unlinkSync(f);
+      const removePatterns = [
+        "**/*.md",
+        "**/*.sh",
+        "**/*.zip",
+        "**/notes.11tydata.js",
+        "**/.opencode/**",
+        "**/scripts/**",
+      ];
+      for (const pattern of removePatterns) {
+        for (const f of globSync(pattern, {
+          cwd: distNotes,
+          absolute: true,
+          nodir: true,
+        })) {
+          fs.unlinkSync(f);
+        }
       }
     } catch {
       // ignore

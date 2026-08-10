@@ -17,6 +17,7 @@ jobs:
   deploy:
     name: Build and deploy notes
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       contents: read
     steps:
@@ -32,17 +33,32 @@ jobs:
         run: |
           npm ci
           npm run build
-        env:
-          SITE_BASE_URL: https://notes.houmq.cn
+          echo "=== dist stats ==="
+          du -sh dist
+          echo "file count: $(find dist -type f | wc -l)"
 
       - name: Deploy to server
+        timeout-minutes: 30
         run: |
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
-          SSH="ssh -i ~/.deploy_key -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes"
-          tar -C dist -czf - . | $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "mkdir -p ${DEPLOY_PATH} && rm -rf ${DEPLOY_PATH:?}/* && tar -xzf - -C ${DEPLOY_PATH}"
+
+          RSYNC_SSH="ssh -i ~/.deploy_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o IdentitiesOnly=yes \
+            -o ConnectTimeout=30 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=4"
+
+          echo "=== ensure deploy path exists ==="
+          $RSYNC_SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${DEPLOY_PATH}"
+
+          echo "=== rsync start ==="
+          rsync -az --delete --human-readable --info=stats2,progress2 \
+            -e "$RSYNC_SSH" \
+            dist/ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+          echo "=== rsync done ==="
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
