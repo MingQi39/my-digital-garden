@@ -19,55 +19,12 @@ jobs:
   deploy:
     name: Build and deploy notes
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Sync source to server
-        timeout-minutes: 85
-        run: |
-          set -euo pipefail
-          install -m 600 /dev/null ~/.deploy_key
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
-
-          SSH_OPTS="-i ~/.deploy_key \
-            -o StrictHostKeyChecking=accept-new \
-            -o IdentitiesOnly=yes \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=8"
-          SSH="ssh ${SSH_OPTS}"
-          RSYNC_SSH="ssh ${SSH_OPTS}"
-          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
-
-          REMOTE_BUILD_DIR="$($SSH "$REMOTE" "BUILD_REPO='${BUILD_REPO}' bash -s" <<'REMOTE'
-          for d in "$HOME/$BUILD_REPO" /var/www/my-digital-garden; do
-            if [ -f "$d/package.json" ]; then
-              echo "$d"
-              exit 0
-            fi
-          done
-          echo "$HOME/$BUILD_REPO"
-          REMOTE
-          )"
-          echo "remote build dir: $REMOTE_BUILD_DIR"
-
-          echo "=== rsync source to server (incremental) ==="
-          rsync -a --delete --info=stats2 \
-            --exclude node_modules \
-            --exclude dist \
-            --exclude .git \
-            -e "$RSYNC_SSH" \
-            ./ "${REMOTE}:${REMOTE_BUILD_DIR}/"
-        env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-
       - name: Build and publish on server
-        timeout-minutes: 45
+        timeout-minutes: 55
         run: |
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
@@ -81,20 +38,18 @@ jobs:
             -o ServerAliveCountMax=8"
 
           $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "BUILD_REPO='${BUILD_REPO}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'REMOTE'
+            "BUILD_REPO='${BUILD_REPO}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' REPO_URL='${REPO_URL}' bash -s" <<'REMOTE'
           set -euo pipefail
           BUILD_REPO="${BUILD_REPO:-my-digital-garden}"
           SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
           DEPLOY_PATH="${DEPLOY_PATH:-/var/www/my-digital-garden/dist}"
-
-          BUILD_DIR=""
-          for candidate in "$HOME/$BUILD_REPO" /var/www/my-digital-garden; do
-            if [ -f "$candidate/package.json" ]; then
-              BUILD_DIR="$candidate"
-              break
-            fi
-          done
-          BUILD_DIR="${BUILD_DIR:-$HOME/$BUILD_REPO}"
+          REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
+          BUILD_DIR="$HOME/$BUILD_REPO"
+          ARCHIVE_MIRRORS=(
+            "https://ghfast.top/https://github.com/MingQi39/my-digital-garden/archive/refs/heads/main.tar.gz"
+            "https://mirror.ghproxy.com/https://github.com/MingQi39/my-digital-garden/archive/refs/heads/main.tar.gz"
+            "https://github.com/MingQi39/my-digital-garden/archive/refs/heads/main.tar.gz"
+          )
 
           log() { echo "[$(date -u +%H:%M:%S)] $*"; }
 
@@ -109,6 +64,39 @@ jobs:
               return 0
             fi
             log "ERROR: node not found (run scripts/deploy-bootstrap.sh on VPS once)"
+            exit 1
+          }
+
+          sync_source() {
+            local staging="${BUILD_DIR}.staging.$$"
+            mkdir -p "$staging"
+            trap 'rm -rf "$staging"' EXIT
+
+            for url in "${ARCHIVE_MIRRORS[@]}"; do
+              log "download source: $url"
+              if curl -fsSL --connect-timeout 30 --retry 2 --retry-delay 5 --max-time 2400 \
+                "$url" | tar -xzf - -C "$staging" --strip-components=1; then
+                if [ -f "$staging/package.json" ]; then
+                  if [ -d "$BUILD_DIR/node_modules" ]; then
+                    log "reuse existing node_modules"
+                    rm -rf "$staging/node_modules"
+                    mv "$BUILD_DIR/node_modules" "$staging/node_modules"
+                  fi
+                  if [ -f "$BUILD_DIR/.npm-ci-hash" ]; then
+                    cp "$BUILD_DIR/.npm-ci-hash" "$staging/.npm-ci-hash"
+                  fi
+                  rm -rf "$BUILD_DIR"
+                  mv "$staging" "$BUILD_DIR"
+                  trap - EXIT
+                  log "source ready at $BUILD_DIR"
+                  return 0
+                fi
+              fi
+              log "download failed for $url"
+              rm -rf "$staging"/*
+            done
+
+            log "ERROR: cannot download source archive (check VPS outbound network)"
             exit 1
           }
 
@@ -142,12 +130,8 @@ jobs:
             test -f "$DEPLOY_PATH/index.html"
           }
 
-          if [ ! -f "$BUILD_DIR/package.json" ]; then
-            log "ERROR: source sync missing at $BUILD_DIR"
-            exit 1
-          fi
-
           ensure_node
+          sync_source
           npm_install
 
           log "npm run build"
