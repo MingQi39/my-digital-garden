@@ -20,9 +20,7 @@ runs:
       shell: bash
       run: bash "${{ github.action_path }}/notify.sh"
       env:
-        FEISHU_APP_ID: ${{ env.FEISHU_APP_ID }}
         FEISHU_APP_SECRET: ${{ env.FEISHU_APP_SECRET }}
-        FEISHU_CHAT_ID: ${{ env.FEISHU_CHAT_ID }}
         DEPLOY_STATUS: ${{ inputs.status }}
         DEPLOY_PROJECT: ${{ inputs.project_name }}
         DEPLOY_JOB_NAME: ${{ inputs.job_name != '' && inputs.job_name || github.job }}

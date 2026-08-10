@@ -147,3 +147,26 @@ jobs:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+  notify:
+    name: Notify Feishu deploy result
+    needs: deploy
+    if: |
+      always() &&
+      needs.deploy.result != 'skipped' &&
+      (needs.deploy.result == 'success' || needs.deploy.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions/feishu-deploy-notify
+          sparse-checkout-cone-mode: true
+
+      - name: Notify Feishu deploy result
+        uses: ./.github/actions/feishu-deploy-notify
+        with:
+          status: ${{ needs.deploy.result == 'success' && 'success' || 'failure' }}
+          project_name: Digital Garden
+          job_name: deploy
+        env:
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}

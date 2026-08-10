@@ -5,6 +5,10 @@ set -euo pipefail
 FEISHU_APP_ID="${FEISHU_APP_ID:-cli_a9715c79b3f99cdd}"
 FEISHU_APP_SECRET="${FEISHU_APP_SECRET:-}"
 FEISHU_CHAT_ID="${FEISHU_CHAT_ID:-oc_8074c4ae7b3baaadc402def9d9b603ae}"
+# workflow 可能注入空字符串，显式回落到默认值
+[[ -z "${FEISHU_APP_ID// /}" ]] && FEISHU_APP_ID="cli_a9715c79b3f99cdd"
+[[ -z "${FEISHU_CHAT_ID// /}" ]] && FEISHU_CHAT_ID="oc_8074c4ae7b3baaadc402def9d9b603ae"
+FEISHU_APP_SECRET="${FEISHU_APP_SECRET// /}"
 
 DEPLOY_STATUS="${DEPLOY_STATUS:-unknown}"
 DEPLOY_PROJECT="${DEPLOY_PROJECT:-}"
@@ -16,8 +20,8 @@ DEPLOY_RUN_URL="${DEPLOY_RUN_URL:-}"
 DEPLOY_JOB_NAME="${DEPLOY_JOB_NAME:-deploy}"
 DEPLOY_TITLE="${DEPLOY_TITLE:-}"
 
-if [[ -z "$FEISHU_APP_SECRET" || -z "$FEISHU_CHAT_ID" ]]; then
-  echo "Feishu notify skipped: set secrets FEISHU_APP_SECRET and FEISHU_CHAT_ID"
+if [[ -z "$FEISHU_APP_SECRET" ]]; then
+  echo "Feishu notify skipped: set GitHub secret FEISHU_APP_SECRET"
   exit 0
 fi
 
@@ -103,7 +107,7 @@ token_resp="$(curl -sS -X POST 'https://open.feishu.cn/open-apis/auth/v3/tenant_
 
 token="$(jq -r '.tenant_access_token // empty' <<<"$token_resp")"
 if [[ -z "$token" ]]; then
-  echo "Feishu notify failed: cannot get tenant_access_token" >&2
+  echo "Feishu notify failed: cannot get tenant_access_token (app_id=${FEISHU_APP_ID})" >&2
   echo "$token_resp" >&2
   exit 0
 fi
