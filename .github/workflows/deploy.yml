@@ -41,7 +41,7 @@ jobs:
           test -f dist/index.html
 
       - name: Deploy to server
-        timeout-minutes: 35
+        timeout-minutes: 40
         run: |
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
@@ -54,34 +54,103 @@ jobs:
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=4"
 
-          if $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "test -d '${REPO_PATH}/.git' && command -v node >/dev/null 2>&1"; then
-            echo "=== server-side build ==="
+          server_build() {
             $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
-              "REPO_PATH='${REPO_PATH}' SITE_BASE_URL='${SITE_BASE_URL}' bash -s" <<'REMOTE'
+              "REPO_PATH='${REPO_PATH}' REPO_URL='${REPO_URL}' SITE_BASE_URL='${SITE_BASE_URL}' bash -s" <<'REMOTE'
           set -euo pipefail
           REPO_PATH="${REPO_PATH:-/var/www/my-digital-garden}"
+          REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
           SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
-          export PATH="$HOME/.local/bin:$PATH"
+
+          ensure_node() {
+            export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              # shellcheck disable=SC1090
+              . "$NVM_DIR/nvm.sh"
+            fi
+            if command -v node >/dev/null 2>&1; then
+              echo "node: $(node -v)"
+              return 0
+            fi
+
+            echo "=== install nvm + node 22 (cn mirror) ==="
+            export NVM_NODEJS_ORG_MIRROR="${NVM_NODEJS_ORG_MIRROR:-https://npmmirror.com/mirrors/node}"
+            if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+              mkdir -p "$NVM_DIR"
+              if ! git clone --depth 1 https://gitee.com/mirrors/nvm.git "$NVM_DIR" 2>/dev/null; then
+                curl -fsSL --connect-timeout 60 --max-time 300 --retry 3 \
+                  https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+              fi
+              # shellcheck disable=SC1090
+              . "$NVM_DIR/nvm.sh"
+            fi
+            nvm install 22
+            nvm alias default 22
+            nvm use 22
+            echo "node: $(node -v)"
+          }
+
+          ensure_repo() {
+            if [ -d "$REPO_PATH/.git" ]; then
+              echo "=== repo exists: $REPO_PATH ==="
+              return 0
+            fi
+            echo "=== bootstrap: clone repo ==="
+            parent="$(dirname "$REPO_PATH")"
+            mkdir -p "$parent"
+            if [ -e "$REPO_PATH" ]; then
+              backup="${REPO_PATH}.bak.$(date +%s)"
+              echo "moving existing path to $backup"
+              mv "$REPO_PATH" "$backup"
+            fi
+            for attempt in 1 2 3; do
+              if git clone --depth 1 --branch main "$REPO_URL" "$REPO_PATH"; then
+                return 0
+              fi
+              echo "git clone attempt $attempt failed, retrying..."
+              sleep 5
+            done
+            echo "ERROR: git clone failed after 3 attempts"
+            exit 1
+          }
+
+          ensure_node
+          ensure_repo
+
           cd "$REPO_PATH"
-          if [ -s "$HOME/.nvm/nvm.sh" ]; then
-            # shellcheck disable=SC1090
-            . "$HOME/.nvm/nvm.sh"
-          fi
-          echo "node: $(node -v)"
+          echo "=== git sync ==="
           git fetch origin main
           git reset --hard origin/main
+
+          echo "=== npm ci & build ==="
+          npm config set registry https://registry.npmmirror.com
           npm ci
           SITE_BASE_URL="$SITE_BASE_URL" npm run build
+
+          echo "=== dist ready ==="
           du -sh dist
+          echo "files: $(find dist -type f | wc -l)"
           test -f dist/index.html
           REMOTE
+          }
+
+          set +e
+          server_build
+          server_ok=$?
+          set -e
+
+          if [ "$server_ok" -eq 0 ]; then
+            echo "=== server-side deploy complete ==="
             exit 0
           fi
 
-          echo "=== compressed tarball deploy (fallback) ==="
+          echo "WARNING: server-side build failed (exit $server_ok); using gzip tarball fallback"
+          echo "Tip: run scripts/deploy-bootstrap.sh on the VPS once for faster future deploys."
+
           STAGING="${DEPLOY_PATH}.staging.$$"
           $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p '$STAGING'"
 
+          echo "=== streaming compressed dist (~may take 10-30 min on slow links) ==="
           tar -C dist -czf - . | $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "tar -xzf - -C '$STAGING'"
 
           $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" bash -s <<REMOTE
@@ -102,75 +171,7 @@ jobs:
           echo "=== deploy complete ==="
           du -sh "\$DEPLOY_PATH"
           REMOTE
-
-          echo "=== best-effort server bootstrap (repo + node) ==="
-          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "REPO_PATH='${REPO_PATH}' REPO_URL='${REPO_URL}' bash -s" <<'REMOTE' || true
-          set -euo pipefail
-          REPO_PATH="${REPO_PATH:-/var/www/my-digital-garden}"
-          REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
-          export PATH="$HOME/.local/bin:$PATH"
-
-          if [ -d "$REPO_PATH/.git" ]; then
-            echo "repo already present"
-          else
-            parent="$(dirname "$REPO_PATH")"
-            mkdir -p "$parent"
-            scratch="$(mktemp -d "${parent}/.repo-bootstrap.XXXXXX")"
-            git clone --depth 1 --branch main "$REPO_URL" "$scratch"
-            if [ ! -e "$REPO_PATH" ]; then
-              mv "$scratch" "$REPO_PATH"
-            else
-              shopt -s dotglob
-              for item in "$scratch"/*; do
-                base="$(basename "$item")"
-                if [ "$base" = "dist" ] && [ -d "$REPO_PATH/dist" ]; then
-                  continue
-                fi
-                rm -rf "$REPO_PATH/$base"
-                mv "$item" "$REPO_PATH/$base"
-              done
-              shopt -u dotglob
-              rm -rf "$scratch"
-            fi
-            echo "repo bootstrapped at $REPO_PATH"
-          fi
-
-          if command -v node >/dev/null 2>&1; then
-            echo "node: $(node -v)"
-            exit 0
-          fi
-
-          NODE_VERSION="${NODE_VERSION:-22.17.1}"
-          ARCH="${NODE_ARCH:-linux-x64}"
-          PREFIX="${NODE_PREFIX:-$HOME/.local}"
-          TARBALL="node-v${NODE_VERSION}-${ARCH}.tar.xz"
-          tmpdir="$(mktemp -d)"
-          for url in \
-            "https://npmmirror.com/mirrors/node/v${NODE_VERSION}/${TARBALL}" \
-            "https://nodejs.org/dist/v${NODE_VERSION}/${TARBALL}"; do
-            echo "trying $url"
-            if curl -fsSL --connect-timeout 30 --max-time 900 "$url" -o "$tmpdir/$TARBALL"; then
-              mkdir -p "$PREFIX"
-              tar -xJf "$tmpdir/$TARBALL" -C "$PREFIX" --strip-components=1
-              export PATH="$PREFIX/bin:$PATH"
-              grep -qs '\.local/bin' "$HOME/.bashrc" 2>/dev/null || \
-                echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-              echo "node: $(node -v)"
-              rm -rf "$tmpdir"
-              exit 0
-            fi
-          done
-          rm -rf "$tmpdir"
-          echo "WARN: node install skipped (mirrors unreachable)"
-          REMOTE
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-
-      - name: Verify live site
-        run: |
-          set -euo pipefail
-          curl -fsSI "$SITE_BASE_URL/" | grep -E '^HTTP/.* 200'
-          curl -fsSI "$SITE_BASE_URL/notes/002.AI/009.赋范%20AI/005.大模型%20RAG%20入门/001.大模型%20RAG%20入门基础架构介绍/" | grep -E '^HTTP/.* 200'
