@@ -11,54 +11,65 @@ concurrency:
 
 env:
   SITE_BASE_URL: https://notes.houmq.cn
-  DEPLOY_PATH: /var/www/my-digital-garden/dist
+  REPO_PATH: /var/www/my-digital-garden
 
 jobs:
   deploy:
     name: Build and deploy notes
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install and build
-        run: |
-          npm ci
-          npm run build
-          echo "=== dist stats ==="
-          du -sh dist
-          echo "file count: $(find dist -type f | wc -l)"
-
-      - name: Deploy to server
-        timeout-minutes: 30
+      - name: Build on server
+        timeout-minutes: 25
         run: |
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
 
-          RSYNC_SSH="ssh -i ~/.deploy_key \
+          SSH="ssh -i ~/.deploy_key \
             -o StrictHostKeyChecking=accept-new \
             -o IdentitiesOnly=yes \
             -o ConnectTimeout=30 \
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=4"
 
-          echo "=== ensure deploy path exists ==="
-          $RSYNC_SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${DEPLOY_PATH}"
+          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "REPO_PATH='${REPO_PATH}' SITE_BASE_URL='${SITE_BASE_URL}' bash -s" <<'REMOTE'
+          set -euo pipefail
+          REPO_PATH="${REPO_PATH:-/var/www/my-digital-garden}"
+          SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
 
-          echo "=== rsync start ==="
-          rsync -az --delete --human-readable --info=stats2,progress2 \
-            -e "$RSYNC_SSH" \
-            dist/ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
-          echo "=== rsync done ==="
+          if [ ! -d "$REPO_PATH/.git" ]; then
+            echo "ERROR: $REPO_PATH is not a git repo."
+            echo "One-time on server: bash scripts/deploy-bootstrap.sh"
+            exit 1
+          fi
+
+          cd "$REPO_PATH"
+          echo "=== git sync ==="
+          git fetch origin main
+          git reset --hard origin/main
+
+          if [ -s "$HOME/.nvm/nvm.sh" ]; then
+            # shellcheck disable=SC1090
+            . "$HOME/.nvm/nvm.sh"
+          fi
+          if ! command -v node >/dev/null 2>&1; then
+            echo "ERROR: node not found on server (need Node 22)."
+            exit 1
+          fi
+          echo "node: $(node -v)"
+
+          echo "=== npm ci & build ==="
+          npm ci
+          SITE_BASE_URL="$SITE_BASE_URL" npm run build
+
+          echo "=== dist ready ==="
+          du -sh dist
+          echo "files: $(find dist -type f | wc -l)"
+          REMOTE
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
