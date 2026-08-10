@@ -21,7 +21,9 @@ if [ -s "$HOME/.nvm/nvm.sh" ]; then
 fi
 
 if ! command -v node >/dev/null 2>&1; then
-  echo "Install Node 22 first, e.g.:"
+  echo "Install Node 22 first. If GitHub raw is slow from this VPS, use apt instead of nvm:"
+  echo "  sudo apt-get update && sudo apt-get install -y nodejs npm"
+  echo "Or via nvm (needs curl to raw.githubusercontent.com):"
   echo "  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash"
   echo "  nvm install 22"
   exit 1
