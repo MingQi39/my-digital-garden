@@ -11,7 +11,6 @@ concurrency:
 
 env:
   SITE_BASE_URL: https://notes.houmq.cn
-  REPO_PATH: /var/www/my-digital-garden
   DEPLOY_PATH: /var/www/my-digital-garden/dist
   REPO_URL: https://github.com/MingQi39/my-digital-garden.git
 
@@ -19,29 +18,12 @@ jobs:
   deploy:
     name: Build and deploy notes
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install and build
-        run: |
-          npm ci
-          SITE_BASE_URL=https://notes.houmq.cn npm run build
-          echo "=== dist stats ==="
-          du -sh dist
-          echo "file count: $(find dist -type f | wc -l)"
-          test -f dist/index.html
-
-      - name: Deploy to server
-        timeout-minutes: 40
+      - name: Deploy on server
+        timeout-minutes: 18
         run: |
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
@@ -54,9 +36,8 @@ jobs:
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=4"
 
-          server_build() {
-            $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
-              "REPO_PATH='${REPO_PATH}' REPO_URL='${REPO_URL}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'REMOTE'
+          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "REPO_URL='${REPO_URL}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'REMOTE'
           set -euo pipefail
           REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
           SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
@@ -106,13 +87,20 @@ jobs:
               echo "git clone attempt $attempt failed, retrying..."
               sleep 5
             done
-            echo "ERROR: git clone failed after 3 attempts"
+            echo "ERROR: git clone failed after 3 attempts (check VPS access to github.com)"
             exit 1
           }
 
           publish_dist() {
             mkdir -p "$DEPLOY_PATH"
-            rsync -a --delete dist/ "$DEPLOY_PATH/"
+            if rsync -a --delete dist/ "$DEPLOY_PATH/"; then
+              :
+            elif command -v sudo >/dev/null 2>&1 && sudo rsync -a --delete dist/ "$DEPLOY_PATH/"; then
+              echo "published via sudo rsync"
+            else
+              echo "ERROR: cannot write to $DEPLOY_PATH (fix: chown -R \$USER:www-data $DEPLOY_PATH)"
+              exit 1
+            fi
             echo "=== dist published to $DEPLOY_PATH ==="
             du -sh "$DEPLOY_PATH"
             echo "files: $(find "$DEPLOY_PATH" -type f | wc -l)"
@@ -137,42 +125,7 @@ jobs:
           echo "files: $(find dist -type f | wc -l)"
           test -f dist/index.html
           publish_dist
-          REMOTE
-          }
-
-          set +e
-          server_build
-          server_ok=$?
-          set -e
-
-          if [ "$server_ok" -eq 0 ]; then
-            echo "=== server-side deploy complete ==="
-            exit 0
-          fi
-
-          echo "WARNING: server-side build failed (exit $server_ok); using gzip tarball fallback"
-          echo "Tip: run scripts/deploy-bootstrap.sh on the VPS once for faster future deploys."
-
-          STAGING="${DEPLOY_PATH}.staging.$$"
-          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p '$STAGING'"
-
-          echo "=== streaming compressed dist (~may take 10-30 min on slow links) ==="
-          tar -C dist -czf - . | $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "tar -xzf - -C '$STAGING'"
-
-          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" bash -s <<REMOTE
-          set -euo pipefail
-          STAGING='$STAGING'
-          DEPLOY_PATH='$DEPLOY_PATH'
-          if [ ! -f "\$STAGING/index.html" ]; then
-            echo "ERROR: staging dist looks incomplete (missing index.html)"
-            rm -rf "\$STAGING"
-            exit 1
-          fi
-          mkdir -p "\$DEPLOY_PATH"
-          rsync -a --delete "\$STAGING"/ "\$DEPLOY_PATH"/
-          rm -rf "\$STAGING"
-          echo "=== deploy complete ==="
-          du -sh "\$DEPLOY_PATH"
+          echo "=== server-side deploy complete ==="
           REMOTE
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
