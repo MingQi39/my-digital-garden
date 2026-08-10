@@ -12,106 +12,166 @@ concurrency:
 env:
   SITE_BASE_URL: https://notes.houmq.cn
   DEPLOY_PATH: /var/www/my-digital-garden/dist
-  INCOMING_DIR: dist-incoming
   REPO_URL: https://github.com/MingQi39/my-digital-garden.git
 
 jobs:
   deploy:
     name: Build and deploy notes
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install and build
-        run: |
-          set -euo pipefail
-          npm ci
-          SITE_BASE_URL="$SITE_BASE_URL" npm run build
-          echo "=== dist stats ==="
-          du -sh dist
-          echo "files: $(find dist -type f | wc -l)"
-          test -f dist/index.html
-
-      - name: Publish dist to server
-        timeout-minutes: 40
+      - name: Deploy on server
+        timeout-minutes: 55
         run: |
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
 
-          SSH_OPTS="-i ~/.deploy_key \
+          SSH="ssh -tt -i ~/.deploy_key \
             -o StrictHostKeyChecking=accept-new \
             -o IdentitiesOnly=yes \
             -o ConnectTimeout=30 \
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=8"
-          SSH="ssh ${SSH_OPTS}"
-          RSYNC_SSH="ssh ${SSH_OPTS}"
 
-          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
-
-          echo "=== seed incoming cache from live dist if empty ==="
-          $SSH "$REMOTE" bash -s <<REMOTE
+          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "GH_TOKEN='${GH_TOKEN}' REPO_URL='${REPO_URL}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'REMOTE'
           set -euo pipefail
-          INCOMING="\$HOME/${INCOMING_DIR}"
-          DEPLOY_PATH='$DEPLOY_PATH'
-          if [ ! -f "\$INCOMING/index.html" ] && [ -f "\$DEPLOY_PATH/index.html" ]; then
-            echo "seeding \$INCOMING from \$DEPLOY_PATH"
-            mkdir -p "\$INCOMING"
-            rsync -a "\$DEPLOY_PATH/" "\$INCOMING/"
-          fi
-          mkdir -p "\$INCOMING"
-          REMOTE
+          REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
+          SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
+          BUILD_REPO="${BUILD_REPO:-$HOME/my-digital-garden}"
+          DEPLOY_PATH="${DEPLOY_PATH:-/var/www/my-digital-garden/dist}"
+          AUTH_REPO="https://x-access-token:${GH_TOKEN}@github.com/MingQi39/my-digital-garden.git"
 
-          echo "=== rsync changed files to incoming cache ==="
-          rsync -a --delete --info=stats2 \
-            -e "$RSYNC_SSH" \
-            dist/ "${REMOTE}:${INCOMING_DIR}/"
+          log() { echo "[$(date -u +%H:%M:%S)] $*"; }
 
-          echo "=== publish incoming -> deploy path ==="
-          $SSH "$REMOTE" bash -s <<REMOTE
-          set -euo pipefail
-          INCOMING="\$HOME/${INCOMING_DIR}"
-          DEPLOY_PATH='$DEPLOY_PATH'
+          ensure_node() {
+            export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              # shellcheck disable=SC1090
+              . "$NVM_DIR/nvm.sh"
+            fi
+            if command -v node >/dev/null 2>&1; then
+              log "node: $(node -v)"
+              return 0
+            fi
 
-          if [ ! -f "\$INCOMING/index.html" ]; then
-            echo "ERROR: incoming dist incomplete (missing index.html)"
-            exit 1
-          fi
-
-          publish() {
-            mkdir -p "\$DEPLOY_PATH"
-            rsync -a --delete "\$INCOMING/" "\$DEPLOY_PATH/"
+            log "install nvm + node 22 (cn mirror)"
+            export NVM_NODEJS_ORG_MIRROR="${NVM_NODEJS_ORG_MIRROR:-https://npmmirror.com/mirrors/node}"
+            if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+              mkdir -p "$NVM_DIR"
+              if ! timeout 120 git clone --depth 1 https://gitee.com/mirrors/nvm.git "$NVM_DIR" 2>/dev/null; then
+                curl -fsSL --connect-timeout 60 --max-time 300 --retry 3 \
+                  https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+              fi
+              # shellcheck disable=SC1090
+              . "$NVM_DIR/nvm.sh"
+            fi
+            nvm install 22
+            nvm alias default 22
+            nvm use 22
+            log "node: $(node -v)"
           }
 
-          if publish; then
-            echo "published to \$DEPLOY_PATH"
-          elif command -v sudo >/dev/null 2>&1 && sudo rsync -a --delete "\$INCOMING/" "\$DEPLOY_PATH/"; then
-            echo "published via sudo rsync"
-          else
-            echo "ERROR: cannot write to \$DEPLOY_PATH"
+          pick_build_repo() {
+            for candidate in "$BUILD_REPO" /var/www/my-digital-garden "$HOME/my-digital-garden"; do
+              if [ -d "$candidate/.git" ] && git -C "$candidate" rev-parse HEAD >/dev/null 2>&1; then
+                BUILD_REPO="$candidate"
+                log "using existing repo: $BUILD_REPO"
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          ensure_repo() {
+            if pick_build_repo; then
+              return 0
+            fi
+
+            log "bootstrap: clone repo to $BUILD_REPO"
+            mkdir -p "$(dirname "$BUILD_REPO")"
+            rm -rf "$BUILD_REPO"
+
+            if [ -n "${GH_TOKEN:-}" ]; then
+              log "try clone via GITHUB_TOKEN"
+              if timeout 600 git clone --depth 1 --branch main "$AUTH_REPO" "$BUILD_REPO"; then
+                git -C "$BUILD_REPO" remote set-url origin "$REPO_URL"
+                return 0
+              fi
+              log "token clone failed"
+              rm -rf "$BUILD_REPO"
+            fi
+
+            log "ERROR: cannot clone repo (set GH_TOKEN or run scripts/deploy-bootstrap.sh on VPS once)"
             exit 1
-          fi
+          }
 
-          du -sh "\$DEPLOY_PATH"
-          echo "files: \$(find "\$DEPLOY_PATH" -type f | wc -l)"
-          test -f "\$DEPLOY_PATH/index.html"
+          git_sync() {
+            cd "$BUILD_REPO"
+            log "git sync"
+            export GIT_TERMINAL_PROMPT=0
+            if [ -n "${GH_TOKEN:-}" ]; then
+              git remote set-url origin "$AUTH_REPO"
+            fi
+            timeout 300 git fetch --depth 1 origin main
+            git reset --hard FETCH_HEAD
+            if [ -n "${GH_TOKEN:-}" ]; then
+              git remote set-url origin "$REPO_URL"
+            fi
+            log "synced to $(git rev-parse --short HEAD)"
+          }
+
+          npm_install() {
+            npm config set registry https://registry.npmmirror.com
+            LOCK_HASH="$(md5sum package-lock.json | awk '{print $1}')"
+            if [ -f .npm-ci-hash ] && [ "$(cat .npm-ci-hash)" = "$LOCK_HASH" ] && [ -d node_modules ]; then
+              log "package-lock unchanged, skip npm ci"
+              return 0
+            fi
+            log "npm ci"
+            npm ci
+            echo "$LOCK_HASH" > .npm-ci-hash
+          }
+
+          publish_dist() {
+            mkdir -p "$DEPLOY_PATH"
+            if rsync -a --delete dist/ "$DEPLOY_PATH/"; then
+              :
+            elif command -v sudo >/dev/null 2>&1 && sudo rsync -a --delete dist/ "$DEPLOY_PATH/"; then
+              log "published via sudo rsync"
+            else
+              log "ERROR: cannot write to $DEPLOY_PATH"
+              exit 1
+            fi
+            log "dist published to $DEPLOY_PATH"
+            du -sh "$DEPLOY_PATH"
+            echo "files: $(find "$DEPLOY_PATH" -type f | wc -l)"
+            test -f "$DEPLOY_PATH/index.html"
+          }
+
+          ensure_node
+          ensure_repo
+          git_sync
+          npm_install
+
+          log "npm run build"
+          SITE_BASE_URL="$SITE_BASE_URL" npm run build
+
+          log "dist ready"
+          du -sh dist
+          echo "files: $(find dist -type f | wc -l)"
+          test -f dist/index.html
+          publish_dist
+          log "server-side deploy complete"
           REMOTE
-
-          echo "=== deploy complete ==="
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   notify:
     name: Notify Feishu deploy result
