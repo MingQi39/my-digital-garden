@@ -12,17 +12,18 @@ concurrency:
 env:
   SITE_BASE_URL: https://notes.houmq.cn
   REPO_PATH: /var/www/my-digital-garden
+  REPO_URL: https://github.com/MingQi39/my-digital-garden.git
 
 jobs:
   deploy:
     name: Build and deploy notes
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
     steps:
       - name: Build on server
-        timeout-minutes: 25
+        timeout-minutes: 40
         run: |
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
@@ -36,31 +37,57 @@ jobs:
             -o ServerAliveCountMax=4"
 
           $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "REPO_PATH='${REPO_PATH}' SITE_BASE_URL='${SITE_BASE_URL}' bash -s" <<'REMOTE'
+            "REPO_PATH='${REPO_PATH}' REPO_URL='${REPO_URL}' SITE_BASE_URL='${SITE_BASE_URL}' bash -s" <<'REMOTE'
           set -euo pipefail
           REPO_PATH="${REPO_PATH:-/var/www/my-digital-garden}"
+          REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
           SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
 
-          if [ ! -d "$REPO_PATH/.git" ]; then
-            echo "ERROR: $REPO_PATH is not a git repo."
-            echo "One-time on server: bash scripts/deploy-bootstrap.sh"
-            exit 1
-          fi
+          ensure_node() {
+            export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              # shellcheck disable=SC1090
+              . "$NVM_DIR/nvm.sh"
+            fi
+            if command -v node >/dev/null 2>&1; then
+              echo "node: $(node -v)"
+              return 0
+            fi
+            echo "=== install nvm + node 22 ==="
+            if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+              curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+              # shellcheck disable=SC1090
+              . "$NVM_DIR/nvm.sh"
+            fi
+            nvm install 22
+            nvm alias default 22
+            nvm use 22
+            echo "node: $(node -v)"
+          }
+
+          ensure_repo() {
+            if [ -d "$REPO_PATH/.git" ]; then
+              echo "=== repo exists: $REPO_PATH ==="
+              return 0
+            fi
+            echo "=== bootstrap: clone repo ==="
+            parent="$(dirname "$REPO_PATH")"
+            mkdir -p "$parent"
+            if [ -e "$REPO_PATH" ]; then
+              backup="${REPO_PATH}.bak.$(date +%s)"
+              echo "moving existing path to $backup"
+              mv "$REPO_PATH" "$backup"
+            fi
+            git clone --depth 1 --branch main "$REPO_URL" "$REPO_PATH"
+          }
+
+          ensure_node
+          ensure_repo
 
           cd "$REPO_PATH"
           echo "=== git sync ==="
           git fetch origin main
           git reset --hard origin/main
-
-          if [ -s "$HOME/.nvm/nvm.sh" ]; then
-            # shellcheck disable=SC1090
-            . "$HOME/.nvm/nvm.sh"
-          fi
-          if ! command -v node >/dev/null 2>&1; then
-            echo "ERROR: node not found on server (need Node 22)."
-            exit 1
-          fi
-          echo "node: $(node -v)"
 
           echo "=== npm ci & build ==="
           npm ci
@@ -69,6 +96,7 @@ jobs:
           echo "=== dist ready ==="
           du -sh dist
           echo "files: $(find dist -type f | wc -l)"
+          test -f dist/index.html
           REMOTE
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}

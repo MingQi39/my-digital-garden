@@ -3,7 +3,7 @@
 # Run on the VPS as the deploy user (same user as DEPLOY_USER secret).
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-git@github.com:MingQi39/my-digital-garden.git}"
+REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
 REPO_PATH="${REPO_PATH:-/var/www/my-digital-garden}"
 
 if [ -d "$REPO_PATH/.git" ]; then
