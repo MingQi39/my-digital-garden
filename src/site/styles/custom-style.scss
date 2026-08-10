@@ -53,7 +53,10 @@ $filetree-collapsed-width: 44px;
     transition: width 0.25s ease, min-width 0.25s ease;
 }
 body .content {
-    transition: margin-left 0.25s ease;
+    transition: margin-left 0.25s ease, max-width 0.25s ease;
+}
+.sidebar {
+    transition: left 0.25s ease;
 }
 // ========== 正文区宽度修复：覆盖 base 在 1400px 断点的 max-width，与正确布局（如 013）保持一致 ==========
 // 仅覆盖 max-width，不改变 margin-left 等布局，保持与 base 默认一致
@@ -150,13 +153,32 @@ body.filetree-collapsed .filetree-sidebar,
         margin: 0;
     }
 }
+// 收起时同步缩小文件树相关布局变量，并放宽正文 max-width，
+// 让 base 里 content / 右侧栏的 calc 一起跟着变，避免只挪左边距、正文仍锁 700px。
 body.filetree-collapsed {
-    // 收起时正文紧贴窄栏，不再走居中 max() 逻辑
+    --dg-filetree-width: #{$filetree-collapsed-width};
+    --dg-filetree-min-width: #{$filetree-collapsed-width};
+    --dg-filetree-gap: 16px;
+    --dg-content-max-width: calc(
+        100vw - #{$filetree-collapsed-width} - var(--dg-sidebar-max-width) - var(--dg-sidebar-gap) - 60px
+    );
+
     .content {
         margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
+        max-width: var(--dg-content-max-width) !important;
     }
     .content.canvas-page {
         margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
+        max-width: none !important;
+    }
+}
+
+// 仅宽屏 fixed 右侧栏需要重算 left；≤1400px 已改为 relative + left:auto
+@media (min-width: 1401px) {
+    body.filetree-collapsed .sidebar {
+        left: calc(
+            #{$filetree-collapsed-width} + 16px + var(--dg-content-max-width) + var(--dg-sidebar-gap)
+        ) !important;
     }
 }
 
@@ -167,11 +189,16 @@ body.filetree-collapsed {
         min-width: $filetree-collapsed-width !important;
     }
     body.filetree-collapsed {
+        // 此断点右侧栏已改为文档流布局且 TOC 隐藏，正文可吃满剩余宽度
+        --dg-content-max-width: calc(100vw - #{$filetree-collapsed-width} - 50px);
+
         .content {
             margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
+            max-width: var(--dg-content-max-width) !important;
         }
         .content.canvas-page {
             margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
+            max-width: none !important;
         }
     }
 }
@@ -288,6 +315,18 @@ body.no-filetree .content > header {
     max-height: var(--dg-toc-max-height) !important;
     overflow-y: auto;
     scrollbar-width: thin;
+
+    a.is-active {
+        color: var(--text-normal);
+        font-weight: 600;
+        // Fallback for browsers without color-mix
+        background: rgba(224, 122, 95, 0.14);
+        @supports (background: color-mix(in srgb, red 50%, blue)) {
+            background: color-mix(in srgb, var(--text-accent) 18%, transparent);
+        }
+        border-radius: 4px;
+        text-decoration: none;
+    }
 }
 
 // 展开/收起按钮样式
@@ -308,5 +347,120 @@ body.no-filetree .content > header {
     &:hover {
         background: var(--interactive-hover, rgba(255, 255, 255, 0.08));
         color: var(--text-normal);
+    }
+}
+
+// 正文图片可点击放大预览
+main.content img.dg-image-zoomable {
+    cursor: zoom-in;
+}
+
+.dg-image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(8, 10, 14, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    touch-action: none;
+    overscroll-behavior: none;
+
+    &.is-open,
+    &:not([hidden]) {
+        display: flex;
+    }
+
+    &[hidden] {
+        display: none !important;
+    }
+}
+
+.dg-image-lightbox-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: zoom-out;
+}
+
+.dg-image-lightbox-img {
+    max-width: min(92vw, 1400px);
+    max-height: 88vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+    transform-origin: center center;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-drag: none;
+    transition: transform 0.08s ease-out;
+
+    &.is-dragging {
+        cursor: grabbing;
+        transition: none;
+    }
+}
+
+.dg-image-lightbox-close {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(20, 22, 28, 0.72);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+
+    &:hover {
+        background: rgba(40, 44, 54, 0.9);
+        border-color: rgba(255, 255, 255, 0.35);
+    }
+}
+
+.dg-image-lightbox-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    z-index: 2;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(16, 18, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+body.dg-lightbox-open {
+    overflow: hidden;
+}
+
+@media (max-width: 700px) {
+    .dg-image-lightbox-hint {
+        display: none;
+    }
+    .dg-image-lightbox-close {
+        top: 12px;
+        right: 12px;
     }
 }

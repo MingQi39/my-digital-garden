@@ -1,0 +1,188 @@
+<div id="dg-image-lightbox" class="dg-image-lightbox" hidden aria-hidden="true">
+  <button type="button" class="dg-image-lightbox-close" aria-label="关闭预览">&times;</button>
+  <div class="dg-image-lightbox-stage">
+    <img class="dg-image-lightbox-img" alt="" draggable="false" />
+  </div>
+  <div class="dg-image-lightbox-hint">滚轮缩放 · 拖拽平移 · 双击重置 · Esc 关闭</div>
+</div>
+<script>
+  (function () {
+    var main = document.querySelector("main.content");
+    var root = document.getElementById("dg-image-lightbox");
+    if (!main || !root) return;
+
+    var stage = root.querySelector(".dg-image-lightbox-stage");
+    var img = root.querySelector(".dg-image-lightbox-img");
+    var closeBtn = root.querySelector(".dg-image-lightbox-close");
+    if (!stage || !img || !closeBtn) return;
+
+    var open = false;
+    var scale = 1;
+    var minScale = 0.5;
+    var maxScale = 6;
+    var tx = 0;
+    var ty = 0;
+    var dragging = false;
+    var moved = false;
+    var startX = 0;
+    var startY = 0;
+    var originTx = 0;
+    var originTy = 0;
+    var prevOverflow = "";
+
+    function isPreviewable(el) {
+      if (!el || el.tagName !== "IMG") return false;
+      if (!main.contains(el)) return false;
+      if (el.classList.contains("site-logo")) return false;
+      if (el.closest(".dg-image-lightbox")) return false;
+      if (el.closest("#link-graph, .graph, .search-preview-panel, .tooltip, .link-preview")) return false;
+      var src = el.getAttribute("src") || "";
+      if (!src || src.indexOf("data:") === 0) return false;
+      return true;
+    }
+
+    function applyTransform() {
+      img.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + scale + ")";
+    }
+
+    function resetTransform() {
+      scale = 1;
+      tx = 0;
+      ty = 0;
+      applyTransform();
+    }
+
+    function setOpen(next) {
+      open = next;
+      root.hidden = !next;
+      root.setAttribute("aria-hidden", next ? "false" : "true");
+      root.classList.toggle("is-open", next);
+      document.body.classList.toggle("dg-lightbox-open", next);
+      if (next) {
+        prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = prevOverflow;
+        img.removeAttribute("src");
+        img.alt = "";
+        resetTransform();
+      }
+    }
+
+    function openLightbox(source) {
+      img.src = source.currentSrc || source.src;
+      img.alt = source.alt || "";
+      resetTransform();
+      setOpen(true);
+    }
+
+    function closeLightbox() {
+      if (!open) return;
+      setOpen(false);
+    }
+
+    function zoomAt(clientX, clientY, nextScale) {
+      nextScale = Math.min(maxScale, Math.max(minScale, nextScale));
+      if (nextScale === scale) return;
+
+      var rect = img.getBoundingClientRect();
+      var cx = clientX - (rect.left + rect.width / 2);
+      var cy = clientY - (rect.top + rect.height / 2);
+      var ratio = nextScale / scale;
+      tx = tx - cx * (ratio - 1);
+      ty = ty - cy * (ratio - 1);
+      scale = nextScale;
+      applyTransform();
+    }
+
+    main.addEventListener("click", function (e) {
+      var target = e.target;
+      if (!isPreviewable(target)) return;
+      // 图片包在外链里时仍允许预览，拦截跳转
+      e.preventDefault();
+      e.stopPropagation();
+      openLightbox(target);
+    });
+
+    main.querySelectorAll("img").forEach(function (el) {
+      if (isPreviewable(el)) el.classList.add("dg-image-zoomable");
+    });
+
+    closeBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      closeLightbox();
+    });
+
+    root.addEventListener("click", function (e) {
+      if (e.target === root || e.target === stage) closeLightbox();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (!open) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeLightbox();
+      }
+    });
+
+    stage.addEventListener(
+      "wheel",
+      function (e) {
+        if (!open) return;
+        e.preventDefault();
+        var delta = e.deltaY > 0 ? -0.12 : 0.12;
+        zoomAt(e.clientX, e.clientY, scale * (1 + delta));
+      },
+      { passive: false }
+    );
+
+    img.addEventListener("dblclick", function (e) {
+      e.preventDefault();
+      if (scale > 1.05) {
+        resetTransform();
+      } else {
+        zoomAt(e.clientX, e.clientY, 2.2);
+      }
+    });
+
+    img.addEventListener("pointerdown", function (e) {
+      if (!open || e.button !== 0) return;
+      dragging = true;
+      moved = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      originTx = tx;
+      originTy = ty;
+      img.setPointerCapture(e.pointerId);
+      img.classList.add("is-dragging");
+    });
+
+    img.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+      tx = originTx + dx;
+      ty = originTy + dy;
+      applyTransform();
+    });
+
+    function endDrag(e) {
+      if (!dragging) return;
+      dragging = false;
+      img.classList.remove("is-dragging");
+      try {
+        img.releasePointerCapture(e.pointerId);
+      } catch (err) {}
+    }
+
+    img.addEventListener("pointerup", endDrag);
+    img.addEventListener("pointercancel", endDrag);
+
+    // 点击图片本身不关闭（除非几乎没拖动且点在空白由 stage 处理）
+    img.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (moved) e.preventDefault();
+    });
+  })();
+</script>

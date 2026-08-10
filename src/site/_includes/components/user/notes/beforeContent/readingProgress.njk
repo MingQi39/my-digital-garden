@@ -14,11 +14,12 @@
     }
 
     var ticking = false;
+    var geometryRaf = 0;
 
     function syncGeometry() {
       var rect = main.getBoundingClientRect();
-      container.style.left = rect.left + "px";
-      container.style.width = rect.width + "px";
+      container.style.left = Math.max(0, rect.left) + "px";
+      container.style.width = Math.max(0, rect.width) + "px";
     }
 
     function getProgress() {
@@ -48,8 +49,45 @@
       });
     }
 
+    // 侧栏展开/收起有 0.25s 过渡，期间持续同步进度条几何，避免错位
+    function syncDuringLayoutTransition() {
+      var start = performance.now();
+      if (geometryRaf) cancelAnimationFrame(geometryRaf);
+      function frame(now) {
+        update();
+        if (now - start < 320) {
+          geometryRaf = requestAnimationFrame(frame);
+        } else {
+          geometryRaf = 0;
+          update();
+        }
+      }
+      geometryRaf = requestAnimationFrame(frame);
+    }
+
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
+
+    if (window.ResizeObserver) {
+      new ResizeObserver(onScroll).observe(main);
+    }
+
+    main.addEventListener("transitionend", function (e) {
+      if (e.target !== main) return;
+      if (e.propertyName === "margin-left" || e.propertyName === "max-width") {
+        update();
+      }
+    });
+
+    new MutationObserver(function (mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        if (mutations[i].attributeName === "class") {
+          syncDuringLayoutTransition();
+          return;
+        }
+      }
+    }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+
     update();
   })();
 </script>

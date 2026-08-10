@@ -1,0 +1,73 @@
+<script>
+  (function () {
+    var tocRoot = document.querySelector(".sidebar .toc-container");
+    if (!tocRoot) return;
+
+    var links = Array.prototype.slice.call(tocRoot.querySelectorAll('a[href^="#"]'));
+    if (!links.length) return;
+
+    var items = [];
+    links.forEach(function (link) {
+      var href = link.getAttribute("href") || "";
+      if (href.length < 2) return;
+      var id;
+      try {
+        id = decodeURIComponent(href.slice(1));
+      } catch (e) {
+        id = href.slice(1);
+      }
+      if (!id) return;
+      var heading = document.getElementById(id);
+      if (!heading) return;
+      items.push({ link: link, heading: heading });
+    });
+    if (!items.length) return;
+
+    var activeLink = null;
+    var ticking = false;
+    var topOffset = 96;
+
+    function setActive(next) {
+      if (activeLink === next) return;
+      if (activeLink) activeLink.classList.remove("is-active");
+      activeLink = next;
+      if (activeLink) {
+        activeLink.classList.add("is-active");
+        var container = tocRoot;
+        var linkTop = activeLink.offsetTop;
+        var linkBottom = linkTop + activeLink.offsetHeight;
+        if (linkTop < container.scrollTop + 8) {
+          container.scrollTop = Math.max(0, linkTop - 8);
+        } else if (linkBottom > container.scrollTop + container.clientHeight - 8) {
+          container.scrollTop = linkBottom - container.clientHeight + 8;
+        }
+      }
+    }
+
+    function updateActive() {
+      var current = items[0] ? items[0].link : null;
+      for (var i = 0; i < items.length; i++) {
+        var rect = items[i].heading.getBoundingClientRect();
+        if (rect.top <= topOffset) {
+          current = items[i].link;
+        } else {
+          break;
+        }
+      }
+      setActive(current);
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        updateActive();
+        ticking = false;
+      });
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    updateActive();
+  })();
+</script>
