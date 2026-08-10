@@ -18,131 +18,89 @@ jobs:
   deploy:
     name: Build and deploy notes
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
-      - name: Deploy on server
-        timeout-minutes: 18
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install and build
+        run: |
+          set -euo pipefail
+          npm ci
+          SITE_BASE_URL="$SITE_BASE_URL" npm run build
+          echo "=== dist stats ==="
+          du -sh dist
+          echo "files: $(find dist -type f | wc -l)"
+          test -f dist/index.html
+
+      - name: Publish dist to server
+        timeout-minutes: 20
         run: |
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
 
-          SSH="ssh -i ~/.deploy_key \
+          SSH_OPTS="-i ~/.deploy_key \
             -o StrictHostKeyChecking=accept-new \
             -o IdentitiesOnly=yes \
             -o ConnectTimeout=30 \
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=4"
+          SSH="ssh ${SSH_OPTS}"
+          RSYNC_SSH="ssh ${SSH_OPTS}"
 
-          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "REPO_URL='${REPO_URL}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'REMOTE'
+          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
+          STAGING="${DEPLOY_PATH}.staging.$$"
+
+          echo "=== prepare staging on server ==="
+          $SSH "$REMOTE" "rm -rf '$STAGING' && mkdir -p '$STAGING'"
+
+          echo "=== rsync dist to staging ($(du -sh dist | cut -f1)) ==="
+          rsync -az --delete --info=progress2 \
+            -e "$RSYNC_SSH" \
+            dist/ "${REMOTE}:${STAGING}/"
+
+          echo "=== publish staging -> deploy path ==="
+          $SSH "$REMOTE" bash -s <<REMOTE
           set -euo pipefail
-          REPO_URL="${REPO_URL:-https://github.com/MingQi39/my-digital-garden.git}"
-          SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
-          BUILD_REPO="${BUILD_REPO:-$HOME/my-digital-garden}"
-          DEPLOY_PATH="${DEPLOY_PATH:-/var/www/my-digital-garden/dist}"
+          STAGING='$STAGING'
+          DEPLOY_PATH='$DEPLOY_PATH'
 
-          ensure_node() {
-            export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-            if [ -s "$NVM_DIR/nvm.sh" ]; then
-              # shellcheck disable=SC1090
-              . "$NVM_DIR/nvm.sh"
-            fi
-            if command -v node >/dev/null 2>&1; then
-              echo "node: $(node -v)"
-              return 0
-            fi
-
-            echo "=== install nvm + node 22 (cn mirror) ==="
-            export NVM_NODEJS_ORG_MIRROR="${NVM_NODEJS_ORG_MIRROR:-https://npmmirror.com/mirrors/node}"
-            if [ ! -s "$NVM_DIR/nvm.sh" ]; then
-              mkdir -p "$NVM_DIR"
-              if ! git clone --depth 1 https://gitee.com/mirrors/nvm.git "$NVM_DIR" 2>/dev/null; then
-                curl -fsSL --connect-timeout 60 --max-time 300 --retry 3 \
-                  https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-              fi
-              # shellcheck disable=SC1090
-              . "$NVM_DIR/nvm.sh"
-            fi
-            nvm install 22
-            nvm alias default 22
-            nvm use 22
-            echo "node: $(node -v)"
-          }
-
-          REPO_MIRROR="${REPO_MIRROR:-https://gitclone.com/github.com/MingQi39/my-digital-garden.git}"
-
-          ensure_repo() {
-            if [ -d "$BUILD_REPO/.git" ] && git -C "$BUILD_REPO" rev-parse HEAD >/dev/null 2>&1; then
-              echo "=== build repo exists: $BUILD_REPO ==="
-              return 0
-            fi
-            echo "=== bootstrap: clone repo to $BUILD_REPO ==="
-            mkdir -p "$(dirname "$BUILD_REPO")"
-            rm -rf "$BUILD_REPO"
-            for url in "$REPO_MIRROR" "$REPO_URL"; do
-              echo "try clone: $url"
-              for attempt in 1 2 3; do
-                if git clone --depth 1 --branch main "$url" "$BUILD_REPO"; then
-                  return 0
-                fi
-                echo "git clone attempt $attempt failed for $url, retrying..."
-                rm -rf "$BUILD_REPO"
-                sleep 5
-              done
-            done
-            echo "ERROR: git clone failed (tried mirror + github.com)"
+          if [ ! -f "\$STAGING/index.html" ]; then
+            echo "ERROR: staging dist incomplete (missing index.html)"
+            rm -rf "\$STAGING"
             exit 1
+          fi
+
+          publish() {
+            mkdir -p "\$DEPLOY_PATH"
+            rsync -a --delete "\$STAGING/" "\$DEPLOY_PATH/"
           }
 
-          git_sync() {
-            cd "$BUILD_REPO"
-            echo "=== git sync ==="
-            git remote set-url origin "$REPO_MIRROR" 2>/dev/null || true
-            if git fetch --depth 1 origin main; then
-              git reset --hard FETCH_HEAD
-              return 0
-            fi
-            echo "mirror fetch failed, trying github.com..."
-            git remote set-url origin "$REPO_URL"
-            git fetch --depth 1 origin main
-            git reset --hard origin/main
-          }
+          if publish; then
+            :
+          elif command -v sudo >/dev/null 2>&1 && sudo rsync -a --delete "\$STAGING/" "\$DEPLOY_PATH/"; then
+            echo "published via sudo rsync"
+          else
+            echo "ERROR: cannot write to \$DEPLOY_PATH"
+            exit 1
+          fi
 
-          publish_dist() {
-            mkdir -p "$DEPLOY_PATH"
-            if rsync -a --delete dist/ "$DEPLOY_PATH/"; then
-              :
-            elif command -v sudo >/dev/null 2>&1 && sudo rsync -a --delete dist/ "$DEPLOY_PATH/"; then
-              echo "published via sudo rsync"
-            else
-              echo "ERROR: cannot write to $DEPLOY_PATH (fix: chown -R \$USER:www-data $DEPLOY_PATH)"
-              exit 1
-            fi
-            echo "=== dist published to $DEPLOY_PATH ==="
-            du -sh "$DEPLOY_PATH"
-            echo "files: $(find "$DEPLOY_PATH" -type f | wc -l)"
-            test -f "$DEPLOY_PATH/index.html"
-          }
-
-          ensure_node
-          ensure_repo
-          git_sync
-
-          echo "=== npm ci & build ==="
-          npm config set registry https://registry.npmmirror.com
-          npm ci
-          SITE_BASE_URL="$SITE_BASE_URL" npm run build
-
-          echo "=== dist ready ==="
-          du -sh dist
-          echo "files: $(find dist -type f | wc -l)"
-          test -f dist/index.html
-          publish_dist
-          echo "=== server-side deploy complete ==="
+          rm -rf "\$STAGING"
+          echo "=== dist published to \$DEPLOY_PATH ==="
+          du -sh "\$DEPLOY_PATH"
+          echo "files: \$(find "\$DEPLOY_PATH" -type f | wc -l)"
+          test -f "\$DEPLOY_PATH/index.html"
           REMOTE
+
+          echo "=== deploy complete ==="
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
@@ -153,8 +111,7 @@ jobs:
     needs: deploy
     if: |
       always() &&
-      needs.deploy.result != 'skipped' &&
-      (needs.deploy.result == 'success' || needs.deploy.result == 'failure')
+      needs.deploy.result != 'skipped'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -165,7 +122,7 @@ jobs:
       - name: Notify Feishu deploy result
         uses: ./.github/actions/feishu-deploy-notify
         with:
-          status: ${{ needs.deploy.result == 'success' && 'success' || 'failure' }}
+          status: ${{ needs.deploy.result }}
           project_name: Digital Garden
           job_name: deploy
         env:
