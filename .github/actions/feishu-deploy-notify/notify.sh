@@ -2,7 +2,7 @@
 # GitHub Actions 部署结果推送飞书群（Open API 应用机器人）。
 set -euo pipefail
 
-FEISHU_APP_ID="${FEISHU_APP_ID:-cli_a979bd17bb791bc0}"
+FEISHU_APP_ID="${FEISHU_APP_ID:-cli_a9715c79b3f99cdd}"
 FEISHU_APP_SECRET="${FEISHU_APP_SECRET:-}"
 FEISHU_CHAT_ID="${FEISHU_CHAT_ID:-oc_8074c4ae7b3baaadc402def9d9b603ae}"
 
