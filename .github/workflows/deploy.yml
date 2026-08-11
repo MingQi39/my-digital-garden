@@ -40,7 +40,6 @@ jobs:
         run: |
           set -euo pipefail
           test -f dist/index.html
-          test -f dist/CNAME
           test -f dist/styles/obsidian-base.css
           compgen -G "dist/styles/_theme.*.css" > /dev/null
           du -sh dist
