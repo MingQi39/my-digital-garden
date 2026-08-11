@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build and/or publish notes on the VPS. Used by GitHub Actions deploy workflow.
+# Manual VPS build/publish fallback. GitHub Actions deploy builds on GHA and rsyncs dist/.
 set -euo pipefail
 
 BUILD_REPO="${BUILD_REPO:-my-digital-garden}"

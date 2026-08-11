@@ -12,21 +12,38 @@ concurrency:
 env:
   SITE_BASE_URL: https://notes.houmq.cn
   DEPLOY_PATH: /var/www/my-digital-garden/dist
-  BUILD_REPO: my-digital-garden
-  REPO_URL: https://github.com/MingQi39/my-digital-garden.git
 
 jobs:
   deploy:
     name: Build and deploy notes
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync source to server
-        timeout-minutes: 30
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build site on GitHub
+        run: npm ci && npm run build
+        env:
+          SITE_BASE_URL: ${{ env.SITE_BASE_URL }}
+
+      - name: Verify build output
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -f dist/styles/obsidian-base.css
+          compgen -G "dist/styles/_theme.*.css" > /dev/null
+          du -sh dist
+
+      - name: Publish dist to server
+        timeout-minutes: 10
         run: |
           set -euo pipefail
           install -m 600 /dev/null ~/.deploy_key
@@ -37,76 +54,34 @@ jobs:
             -o IdentitiesOnly=yes \
             -o ConnectTimeout=30 \
             -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=120 \
+            -o ServerAliveCountMax=60 \
             -o TCPKeepAlive=yes"
-          SSH="ssh ${SSH_OPTS}"
-          RSYNC_SSH="ssh ${SSH_OPTS}"
           REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
-          BUILD_DIR="\$HOME/${BUILD_REPO}"
+          STAGING="~/notes-dist-staging"
 
-          HAS_SOURCE="$($SSH "$REMOTE" "[ -f ${BUILD_DIR}/package.json ] && echo yes || echo no")"
-          if [ "$HAS_SOURCE" != "yes" ]; then
-            echo "no local source yet, VPS step will bootstrap from mirror"
-            exit 0
-          fi
-
-          echo "=== incremental rsync source ==="
+          echo "=== rsync dist to VPS staging ==="
           rsync -a --delete --info=stats2 \
-            --exclude node_modules \
-            --exclude dist \
-            --exclude .git \
-            -e "$RSYNC_SSH" \
-            ./ "${REMOTE}:${BUILD_REPO}/"
-        env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+            -e "ssh ${SSH_OPTS}" \
+            dist/ "${REMOTE}:${STAGING}/"
 
-      - name: Build on server
-        timeout-minutes: 45
-        run: |
+          echo "=== publish to ${DEPLOY_PATH} ==="
+          ssh ${SSH_OPTS} "$REMOTE" \
+            "DEPLOY_PATH='${DEPLOY_PATH}' STAGING=\$HOME/notes-dist-staging bash -s" <<'EOF'
           set -euo pipefail
-          install -m 600 /dev/null ~/.deploy_key
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
-
-          SSH="ssh -i ~/.deploy_key \
-            -o StrictHostKeyChecking=accept-new \
-            -o IdentitiesOnly=yes \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=120 \
-            -o TCPKeepAlive=yes"
-
-          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
-          BUILD_DIR="\$HOME/${BUILD_REPO}"
-
-          $SSH "$REMOTE" \
-            "BUILD_REPO='${BUILD_REPO}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash ${BUILD_DIR}/scripts/deploy-on-server.sh build"
-        env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-
-      - name: Publish on server
-        timeout-minutes: 10
-        run: |
-          set -euo pipefail
-          install -m 600 /dev/null ~/.deploy_key
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
-
-          SSH="ssh -i ~/.deploy_key \
-            -o StrictHostKeyChecking=accept-new \
-            -o IdentitiesOnly=yes \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=120 \
-            -o TCPKeepAlive=yes"
-
-          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
-          BUILD_DIR="\$HOME/${BUILD_REPO}"
-
-          $SSH "$REMOTE" \
-            "BUILD_REPO='${BUILD_REPO}' DEPLOY_PATH='${DEPLOY_PATH}' bash ${BUILD_DIR}/scripts/deploy-on-server.sh publish"
+          mkdir -p "$DEPLOY_PATH"
+          if rsync -a --delete "$STAGING/" "$DEPLOY_PATH/"; then
+            :
+          elif command -v sudo >/dev/null 2>&1 && sudo rsync -a --delete "$STAGING/" "$DEPLOY_PATH/"; then
+            :
+          else
+            echo "ERROR: cannot write to $DEPLOY_PATH" >&2
+            exit 1
+          fi
+          rm -rf "$STAGING"
+          test -f "$DEPLOY_PATH/index.html"
+          du -sh "$DEPLOY_PATH"
+          echo "deploy complete"
+          EOF
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
