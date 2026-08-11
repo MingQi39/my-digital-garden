@@ -33,7 +33,13 @@
 
       <div class="filetree-wrapper" x-show.important="isDesktop || showFilesMobile" style="display: none;"
            :class="{ 'is-collapsed': !filetreeExpanded }"
-           x-effect="document.body.classList.toggle('filetree-collapsed', !filetreeExpanded)">
+           x-effect="(() => {
+             const collapsed = !filetreeExpanded;
+             document.body.classList.toggle('filetree-collapsed', collapsed);
+             const width = collapsed ? '44px' : '350px';
+             document.documentElement.style.setProperty('--dg-filetree-width', width);
+             document.documentElement.style.setProperty('--dg-filetree-min-width', width);
+           })()">
       <nav class="filetree-sidebar">
         <button type="button" class="filetree-toggle-btn" @click="filetreeExpanded = !filetreeExpanded" title="展开/收起侧边栏" aria-label="展开/收起侧边栏">
           <i data-lucide="panel-left-close" x-show="filetreeExpanded" style="display: none;"></i>
@@ -45,7 +51,7 @@
           {% endfor %}
            {% if meta.siteLogoPath %}
            <a href="/" class="filetree-title-link" x-show="filetreeExpanded">
-                     <img class="site-logo" src="{{meta.siteLogoPath}}" alt="{{meta.siteName}}">
+                     <img class="site-logo" src="{{meta.siteLogoPath}}" alt="Qi">
            </a>
            {% else %}
            <a href="/" class="filetree-title-link" x-show="filetreeExpanded">

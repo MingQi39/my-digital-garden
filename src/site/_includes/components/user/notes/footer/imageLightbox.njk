@@ -41,6 +41,12 @@
       return true;
     }
 
+    function markPreviewableImages(scope) {
+      (scope || main).querySelectorAll("img").forEach(function (el) {
+        if (isPreviewable(el)) el.classList.add("dg-image-zoomable");
+      });
+    }
+
     function applyTransform() {
       img.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + scale + ")";
     }
@@ -96,17 +102,27 @@
     }
 
     main.addEventListener("click", function (e) {
-      var target = e.target;
+      var target = e.target.closest ? e.target.closest("img") : null;
       if (!isPreviewable(target)) return;
-      // 图片包在外链里时仍允许预览，拦截跳转
       e.preventDefault();
       e.stopPropagation();
       openLightbox(target);
     });
 
-    main.querySelectorAll("img").forEach(function (el) {
-      if (isPreviewable(el)) el.classList.add("dg-image-zoomable");
-    });
+    markPreviewableImages(main);
+
+    if ("MutationObserver" in window) {
+      var observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+          mutation.addedNodes.forEach(function (node) {
+            if (node.nodeType !== 1) return;
+            if (node.tagName === "IMG") markPreviewableImages(node.parentElement || main);
+            else if (node.querySelectorAll) markPreviewableImages(node);
+          });
+        });
+      });
+      observer.observe(main, { childList: true, subtree: true });
+    }
 
     closeBtn.addEventListener("click", function (e) {
       e.stopPropagation();
@@ -179,7 +195,6 @@
     img.addEventListener("pointerup", endDrag);
     img.addEventListener("pointercancel", endDrag);
 
-    // 点击图片本身不关闭（除非几乎没拖动且点在空白由 stage 处理）
     img.addEventListener("click", function (e) {
       e.stopPropagation();
       if (moved) e.preventDefault();

@@ -1,7 +1,8 @@
 <script>
   (function () {
     var tocRoot = document.querySelector(".sidebar .toc-container");
-    if (!tocRoot) return;
+    var main = document.querySelector("main.content");
+    if (!tocRoot || !main) return;
 
     var links = Array.prototype.slice.call(tocRoot.querySelectorAll('a[href^="#"]'));
     if (!links.length) return;
@@ -17,14 +18,14 @@
         id = href.slice(1);
       }
       if (!id) return;
-      var heading = document.getElementById(id);
-      if (!heading) return;
+      var heading = main.querySelector("#" + CSS.escape(id));
+      if (!heading) heading = document.getElementById(id);
+      if (!heading || !main.contains(heading)) return;
       items.push({ link: link, heading: heading });
     });
     if (!items.length) return;
 
     var activeLink = null;
-    var ticking = false;
 
     function scrollTocToLink(link) {
       var linkRect = link.getBoundingClientRect();
@@ -45,17 +46,17 @@
       }
     }
 
-    function updateActive() {
+    function pickActive() {
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 48) {
+        setActive(items[items.length - 1].link);
+        return;
+      }
+
       var bandTop = 96;
       var bandBottom = Math.max(bandTop + 80, window.innerHeight * 0.42);
       var current = items[0];
       var inBand = null;
       var inBandTop = Infinity;
-
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 48) {
-        setActive(items[items.length - 1].link);
-        return;
-      }
 
       for (var i = 0; i < items.length; i++) {
         var rect = items[i].heading.getBoundingClientRect();
@@ -78,17 +79,52 @@
       setActive(current.link);
     }
 
+    var ticking = false;
     function onScroll() {
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(function () {
-        updateActive();
+        pickActive();
         ticking = false;
+      });
+    }
+
+    if ("IntersectionObserver" in window) {
+      var visible = new Map();
+      var observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) visible.set(entry.target, entry.intersectionRatio);
+            else visible.delete(entry.target);
+          });
+
+          if (visible.size) {
+            var best = null;
+            var bestTop = Infinity;
+            items.forEach(function (item) {
+              if (!visible.has(item.heading)) return;
+              var top = item.heading.getBoundingClientRect().top;
+              if (top < bestTop) {
+                bestTop = top;
+                best = item;
+              }
+            });
+            if (best) {
+              setActive(best.link);
+              return;
+            }
+          }
+          pickActive();
+        },
+        { root: null, rootMargin: "-20% 0px -60% 0px", threshold: [0, 0.1, 0.25, 0.5, 1] }
+      );
+      items.forEach(function (item) {
+        observer.observe(item.heading);
       });
     }
 
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
-    updateActive();
+    pickActive();
   })();
 </script>

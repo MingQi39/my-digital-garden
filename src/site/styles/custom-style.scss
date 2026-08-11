@@ -69,6 +69,14 @@ body .content:not(.canvas-page) {
         max-width: var(--dg-content-max-width) !important;
     }
 
+    // base 在 1400px 隐藏 TOC；阅读站保留目录并参与 scroll spy
+    .sidebar-container .toc {
+        display: flex !important;
+        flex: 1 1 280px;
+        min-width: 220px;
+        max-width: 360px;
+    }
+
     // base 在 1400px 断点硬编码 margin-left:270px / max-width:calc(100vw - 300px)，
     // 对应默认 250px 文件树；加宽后需用 CSS 变量对齐，避免图谱/backlinks 侵入左侧文件树
     .sidebar {
@@ -175,6 +183,36 @@ body.filetree-collapsed {
 
 // 仅宽屏 fixed 右侧栏需要重算 left；≤1400px 已改为 relative + left:auto
 @media (min-width: 1401px) {
+    body.filetree-collapsed {
+        .filetree-wrapper {
+            width: $filetree-collapsed-width !important;
+            min-width: $filetree-collapsed-width !important;
+            max-width: $filetree-collapsed-width !important;
+        }
+
+        .content:not(.canvas-page) {
+            margin-left: calc(#{$filetree-collapsed-width} + var(--dg-filetree-gap)) !important;
+            max-width: calc(
+                100vw - #{$filetree-collapsed-width} - var(--dg-sidebar-max-width) - var(--dg-sidebar-gap) - 40px
+            ) !important;
+        }
+    }
+
+    body:not(.filetree-collapsed) {
+        .content:not(.canvas-page) {
+            margin-left: max(
+                calc(var(--dg-filetree-min-width) + var(--dg-filetree-gap)),
+                min(
+                    calc((100vw - var(--dg-content-max-width)) / 2),
+                    calc(
+                        100vw - var(--dg-content-max-width) - var(--dg-sidebar-max-width) -
+                            var(--dg-sidebar-gap) - 20px
+                    )
+                )
+            ) !important;
+        }
+    }
+
     body.filetree-collapsed .sidebar {
         left: calc(
             #{$filetree-collapsed-width} + 16px + var(--dg-content-max-width) + var(--dg-sidebar-gap)
@@ -377,6 +415,19 @@ main.content {
         max-width: none !important;
         overflow-wrap: anywhere;
         word-break: break-word;
+        border: 1px solid var(--background-modifier-border, rgba(127, 127, 127, 0.35));
+        padding: 8px 10px;
+        vertical-align: top;
+    }
+
+    th {
+        background: var(--background-secondary, rgba(127, 127, 127, 0.08));
+        font-weight: 600;
+    }
+
+    .table-wrapper table {
+        border-collapse: collapse;
+        width: 100%;
     }
 }
 

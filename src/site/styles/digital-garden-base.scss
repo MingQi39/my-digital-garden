@@ -691,6 +691,7 @@ body:has(.content.canvas-page) .sidebar {
         height: var(--dg-filetree-logo-height);
         width: auto;
         object-fit: contain;
+        border-radius: 12px;
     }
     .search-button {
         width: 100%;

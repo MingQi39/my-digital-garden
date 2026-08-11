@@ -13,7 +13,11 @@
     document.body.classList.remove('theme-dark','theme-light');
     document.body.classList.add(useDark ? 'theme-dark' : 'theme-light');
     var filetreeRaw = localStorage.getItem('filetreeExpanded');
-    if (filetreeRaw !== null && JSON.parse(filetreeRaw) === false) {
+    var filetreeExpanded = filetreeRaw === null ? true : JSON.parse(filetreeRaw) !== false;
+    var filetreeWidth = filetreeExpanded ? '350px' : '44px';
+    document.documentElement.style.setProperty('--dg-filetree-width', filetreeWidth);
+    document.documentElement.style.setProperty('--dg-filetree-min-width', filetreeWidth);
+    if (!filetreeExpanded) {
       document.body.classList.add('filetree-collapsed');
     }
     function notify() {
