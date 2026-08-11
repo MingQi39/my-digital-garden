@@ -41,6 +41,8 @@ jobs:
           set -euo pipefail
           test -f dist/index.html
           test -f dist/CNAME
+          test -f dist/favicon.ico
+          test -f dist/icon-192.png
           test -f dist/styles/obsidian-base.css
           compgen -G "dist/styles/_theme.*.css" > /dev/null
           du -sh dist

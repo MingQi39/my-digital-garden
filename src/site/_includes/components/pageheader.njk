@@ -41,6 +41,8 @@
 {%- endfor -%}
 
 {% set faviconVer = meta.buildDate | isoDate %}
+<link rel="icon" href="/favicon.ico?v={{ faviconVer }}" sizes="any">
+<link rel="shortcut icon" href="/favicon.ico?v={{ faviconVer }}">
 <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png?v={{ faviconVer }}">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v={{ faviconVer }}">
 <link rel="icon" type="image/png" href="/logo.png?v={{ faviconVer }}">

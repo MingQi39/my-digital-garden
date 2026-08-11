@@ -858,12 +858,6 @@ module.exports = function(eleventyConfig) {
   // passthrough 会复制 notes 下全部文件；构建后清理 dist/notes 中不应公开访问的源稿与杂项
   eleventyConfig.on("eleventy.after", () => {
     try {
-      const staleIco = path.join(process.cwd(), "dist/favicon.ico");
-      if (fs.existsSync(staleIco)) fs.unlinkSync(staleIco);
-    } catch {
-      // ignore
-    }
-    try {
       const distNotes = path.join(process.cwd(), "dist/notes");
       if (!fs.existsSync(distNotes)) return;
       const removePatterns = [
