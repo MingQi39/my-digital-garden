@@ -26,6 +26,11 @@
     if (!items.length) return;
 
     var activeLink = null;
+    var paused = false;
+
+    new MutationObserver(function () {
+      paused = document.body.classList.contains("dg-lightbox-open");
+    }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
 
     function scrollTocToLink(link) {
       var linkRect = link.getBoundingClientRect();
@@ -37,7 +42,7 @@
     }
 
     function setActive(next) {
-      if (activeLink === next) return;
+      if (paused || activeLink === next) return;
       if (activeLink) activeLink.classList.remove("is-active");
       activeLink = next;
       if (activeLink) {
@@ -47,6 +52,7 @@
     }
 
     function pickActive() {
+      if (paused) return;
       if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 48) {
         setActive(items[items.length - 1].link);
         return;
@@ -93,6 +99,7 @@
       var visible = new Map();
       var observer = new IntersectionObserver(
         function (entries) {
+          if (paused) return;
           entries.forEach(function (entry) {
             if (entry.isIntersecting) visible.set(entry.target, entry.intersectionRatio);
             else visible.delete(entry.target);

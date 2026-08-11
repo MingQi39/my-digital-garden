@@ -1,7 +1,7 @@
 <div id="dg-image-lightbox" class="dg-image-lightbox" hidden aria-hidden="true">
   <button type="button" class="dg-image-lightbox-close" aria-label="关闭预览">&times;</button>
   <div class="dg-image-lightbox-stage">
-    <img class="dg-image-lightbox-img" alt="" draggable="false" />
+    <img class="dg-image-lightbox-img" alt="" draggable="false" decoding="async" />
   </div>
   <div class="dg-image-lightbox-hint">滚轮缩放 · 拖拽平移 · 双击重置 · Esc 关闭</div>
 </div>
@@ -36,13 +36,23 @@
       if (el.classList.contains("site-logo")) return false;
       if (el.closest(".dg-image-lightbox")) return false;
       if (el.closest("#link-graph, .graph, .search-preview-panel, .tooltip, .link-preview")) return false;
-      var src = el.getAttribute("src") || "";
+      var src = el.currentSrc || el.getAttribute("src") || el.src || "";
       if (!src || src.indexOf("data:") === 0) return false;
       return true;
     }
 
-    function markPreviewableImages(scope) {
-      (scope || main).querySelectorAll("img").forEach(function (el) {
+    function resolveImageUrl(source) {
+      var raw = source.currentSrc || source.getAttribute("src") || source.src || "";
+      if (!raw) return "";
+      try {
+        return new URL(raw, window.location.href).href;
+      } catch (err) {
+        return raw;
+      }
+    }
+
+    function markPreviewableImages() {
+      main.querySelectorAll("img").forEach(function (el) {
         if (isPreviewable(el)) el.classList.add("dg-image-zoomable");
       });
     }
@@ -59,6 +69,7 @@
     }
 
     function setOpen(next) {
+      if (open === next) return;
       open = next;
       root.hidden = !next;
       root.setAttribute("aria-hidden", next ? "false" : "true");
@@ -76,7 +87,10 @@
     }
 
     function openLightbox(source) {
-      img.src = source.currentSrc || source.src;
+      if (open) return;
+      var url = resolveImageUrl(source);
+      if (!url) return;
+      img.src = url;
       img.alt = source.alt || "";
       resetTransform();
       setOpen(true);
@@ -101,30 +115,24 @@
       applyTransform();
     }
 
-    main.addEventListener("click", function (e) {
-      var target = e.target.closest ? e.target.closest("img") : null;
-      if (!isPreviewable(target)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      openLightbox(target);
-    });
+    main.addEventListener(
+      "click",
+      function (e) {
+        if (open) return;
+        var target = e.target && e.target.closest ? e.target.closest("img") : null;
+        if (!isPreviewable(target)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        openLightbox(target);
+      },
+      true
+    );
 
-    markPreviewableImages(main);
-
-    if ("MutationObserver" in window) {
-      var observer = new MutationObserver(function (mutations) {
-        mutations.forEach(function (mutation) {
-          mutation.addedNodes.forEach(function (node) {
-            if (node.nodeType !== 1) return;
-            if (node.tagName === "IMG") markPreviewableImages(node.parentElement || main);
-            else if (node.querySelectorAll) markPreviewableImages(node);
-          });
-        });
-      });
-      observer.observe(main, { childList: true, subtree: true });
-    }
+    markPreviewableImages();
 
     closeBtn.addEventListener("click", function (e) {
+      e.preventDefault();
       e.stopPropagation();
       closeLightbox();
     });
@@ -153,6 +161,7 @@
     );
 
     img.addEventListener("dblclick", function (e) {
+      if (!open) return;
       e.preventDefault();
       if (scale > 1.05) {
         resetTransform();
@@ -169,8 +178,8 @@
       startY = e.clientY;
       originTx = tx;
       originTy = ty;
-      img.setPointerCapture(e.pointerId);
       img.classList.add("is-dragging");
+      if (img.setPointerCapture) img.setPointerCapture(e.pointerId);
     });
 
     img.addEventListener("pointermove", function (e) {
@@ -187,9 +196,11 @@
       if (!dragging) return;
       dragging = false;
       img.classList.remove("is-dragging");
-      try {
-        img.releasePointerCapture(e.pointerId);
-      } catch (err) {}
+      if (img.releasePointerCapture) {
+        try {
+          img.releasePointerCapture(e.pointerId);
+        } catch (err) {}
+      }
     }
 
     img.addEventListener("pointerup", endDrag);

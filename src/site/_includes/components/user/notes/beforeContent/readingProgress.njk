@@ -81,12 +81,20 @@
 
     new MutationObserver(function (mutations) {
       for (var i = 0; i < mutations.length; i++) {
-        if (mutations[i].attributeName === "class") {
+        if (mutations[i].attributeName !== "class") continue;
+        var before = mutations[i].oldValue || "";
+        var collapsedBefore = before.indexOf("filetree-collapsed") !== -1;
+        var collapsedAfter = document.body.classList.contains("filetree-collapsed");
+        if (collapsedBefore !== collapsedAfter) {
           syncDuringLayoutTransition();
           return;
         }
       }
-    }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    }).observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"],
+      attributeOldValue: true,
+    });
 
     update();
   })();
