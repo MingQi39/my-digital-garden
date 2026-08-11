@@ -889,6 +889,7 @@ module.exports = function(eleventyConfig) {
   });
   eleventyConfig.addPassthroughCopy("src/site/styles/_theme.*.css");
   eleventyConfig.addPassthroughCopy({ "src/site/logo.*": "/" });
+  eleventyConfig.addPassthroughCopy("src/site/CNAME");
   eleventyConfig.addPlugin(tocPlugin, {
     ul: true,
     tags: ["h1", "h2", "h3", "h4", "h5", "h6"],

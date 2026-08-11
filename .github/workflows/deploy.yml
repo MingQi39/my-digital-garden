@@ -5,21 +5,23 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 concurrency:
-  group: notes-deploy
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 env:
   SITE_BASE_URL: https://notes.houmq.cn
-  DEPLOY_PATH: /var/www/my-digital-garden/dist
 
 jobs:
-  deploy:
-    name: Build and deploy notes
+  build:
+    name: Build site
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -29,7 +31,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Build site on GitHub
+      - name: Build site
         run: npm ci && npm run build
         env:
           SITE_BASE_URL: ${{ env.SITE_BASE_URL }}
@@ -38,61 +40,32 @@ jobs:
         run: |
           set -euo pipefail
           test -f dist/index.html
+          test -f dist/CNAME
           test -f dist/styles/obsidian-base.css
           compgen -G "dist/styles/_theme.*.css" > /dev/null
           du -sh dist
 
-      - name: Publish dist to server
-        timeout-minutes: 10
-        run: |
-          set -euo pipefail
-          install -m 600 /dev/null ~/.deploy_key
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
 
-          SSH_OPTS="-i ~/.deploy_key \
-            -o StrictHostKeyChecking=accept-new \
-            -o IdentitiesOnly=yes \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=60 \
-            -o TCPKeepAlive=yes"
-          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
-          STAGING="~/notes-dist-staging"
-
-          echo "=== rsync dist to VPS staging ==="
-          rsync -a --delete --info=stats2 \
-            -e "ssh ${SSH_OPTS}" \
-            dist/ "${REMOTE}:${STAGING}/"
-
-          echo "=== publish to ${DEPLOY_PATH} ==="
-          ssh ${SSH_OPTS} "$REMOTE" \
-            "DEPLOY_PATH='${DEPLOY_PATH}' STAGING=\$HOME/notes-dist-staging bash -s" <<'EOF'
-          set -euo pipefail
-          mkdir -p "$DEPLOY_PATH"
-          if rsync -a --delete "$STAGING/" "$DEPLOY_PATH/"; then
-            :
-          elif command -v sudo >/dev/null 2>&1 && sudo rsync -a --delete "$STAGING/" "$DEPLOY_PATH/"; then
-            :
-          else
-            echo "ERROR: cannot write to $DEPLOY_PATH" >&2
-            exit 1
-          fi
-          rm -rf "$STAGING"
-          test -f "$DEPLOY_PATH/index.html"
-          du -sh "$DEPLOY_PATH"
-          echo "deploy complete"
-          EOF
-        env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+  deploy:
+    name: Publish to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   notify:
     name: Notify Feishu deploy result
     needs: deploy
-    if: |
-      always() &&
-      needs.deploy.result != 'skipped'
+    if: always() && needs.deploy.result != 'skipped'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
