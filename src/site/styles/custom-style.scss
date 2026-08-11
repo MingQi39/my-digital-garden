@@ -44,7 +44,7 @@ body {
     }
 }
 
-// 侧边栏收起时的宽度（仅展开/主题两个图标，不展示标题）
+// 侧边栏收起时的宽度（展示 Qi Logo + 主题切换）
 $filetree-collapsed-width: 44px;
 
 // 侧边栏展开/收起过渡动画
@@ -132,17 +132,29 @@ body.filetree-collapsed .filetree-sidebar,
         height: 28px;
     }
     .filetree-header {
-        flex-direction: row;
+        flex-direction: column;
         flex-wrap: nowrap;
         justify-content: center;
         align-items: center;
-        gap: 0;
+        gap: 6px;
         width: 100%;
     }
-    .filetree-header .filetree-title-link,
-    .filetree-header h1,
-    .filetree-header .site-logo {
+    .filetree-header .filetree-title-link {
+        display: flex !important;
+        flex: 0 0 auto;
+        min-width: 0;
+        width: 100%;
+        justify-content: center;
+    }
+    .filetree-header h1 {
         display: none !important;
+    }
+    .filetree-header .site-logo {
+        display: block !important;
+        height: 32px;
+        width: 32px;
+        object-fit: contain;
+        border-radius: 8px;
     }
     .filetree-header .theme-toggle-btn {
         width: 28px;

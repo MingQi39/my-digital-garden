@@ -40,7 +40,10 @@
 <link href="{{style}}?v={{meta.buildDate|isoDate}}" rel="stylesheet">
 {%- endfor -%}
 
-{% favicons './src/site/logo.png', appleIconBgColor='#1a1024' %}
+{% favicons './src/site/logo.png', appleIconBgColor='#0a0a0a' %}
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+<link rel="icon" type="image/png" href="/logo.png">
 
 {% if meta.styleSettingsCss %}
     <style>
