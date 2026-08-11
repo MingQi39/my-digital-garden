@@ -61,7 +61,7 @@ jobs:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
 
-      - name: Build and publish on server
+      - name: Build on server
         timeout-minutes: 45
         run: |
           set -euo pipefail
@@ -75,117 +75,35 @@ jobs:
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=8"
 
-          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "BUILD_REPO='${BUILD_REPO}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'REMOTE'
+          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
+          BUILD_DIR="\$HOME/${BUILD_REPO}"
+
+          $SSH "$REMOTE" \
+            "BUILD_REPO='${BUILD_REPO}' SITE_BASE_URL='${SITE_BASE_URL}' DEPLOY_PATH='${DEPLOY_PATH}' bash ${BUILD_DIR}/scripts/deploy-on-server.sh build"
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+      - name: Publish on server
+        timeout-minutes: 10
+        run: |
           set -euo pipefail
-          BUILD_REPO="${BUILD_REPO:-my-digital-garden}"
-          SITE_BASE_URL="${SITE_BASE_URL:-https://notes.houmq.cn}"
-          DEPLOY_PATH="${DEPLOY_PATH:-/var/www/my-digital-garden/dist}"
-          BUILD_DIR="$HOME/$BUILD_REPO"
-          ARCHIVE_MIRRORS=(
-            "https://ghfast.top/https://github.com/MingQi39/my-digital-garden/archive/refs/heads/main.tar.gz"
-            "https://mirror.ghproxy.com/https://github.com/MingQi39/my-digital-garden/archive/refs/heads/main.tar.gz"
-          )
+          install -m 600 /dev/null ~/.deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.deploy_key
 
-          log() { echo "[$(date -u +%H:%M:%S)] $*"; }
+          SSH="ssh -i ~/.deploy_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o IdentitiesOnly=yes \
+            -o ConnectTimeout=30 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=8"
 
-          ensure_node() {
-            export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-            if [ -s "$NVM_DIR/nvm.sh" ]; then
-              # shellcheck disable=SC1090
-              . "$NVM_DIR/nvm.sh"
-            fi
-            if command -v node >/dev/null 2>&1; then
-              log "node: $(node -v)"
-              return 0
-            fi
-            log "ERROR: node not found (run scripts/deploy-bootstrap.sh on VPS once)"
-            exit 1
-          }
+          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
+          BUILD_DIR="\$HOME/${BUILD_REPO}"
 
-          bootstrap_source() {
-            local staging="${BUILD_DIR}.staging.$$"
-            mkdir -p "$staging"
-            trap 'rm -rf "$staging"' EXIT
-
-            for url in "${ARCHIVE_MIRRORS[@]}"; do
-              log "download source: $url"
-              if curl -fsSL --connect-timeout 30 --retry 2 --retry-delay 5 --max-time 2400 \
-                "$url" | tar -xzf - -C "$staging" --strip-components=1; then
-                if [ -f "$staging/package.json" ]; then
-                  if [ -d "$BUILD_DIR/node_modules" ]; then
-                    log "reuse existing node_modules"
-                    rm -rf "$staging/node_modules"
-                    mv "$BUILD_DIR/node_modules" "$staging/node_modules"
-                  fi
-                  if [ -f "$BUILD_DIR/.npm-ci-hash" ]; then
-                    cp "$BUILD_DIR/.npm-ci-hash" "$staging/.npm-ci-hash"
-                  fi
-                  rm -rf "$BUILD_DIR"
-                  mv "$staging" "$BUILD_DIR"
-                  trap - EXIT
-                  log "source ready at $BUILD_DIR"
-                  return 0
-                fi
-              fi
-              log "download failed for $url"
-              rm -rf "$staging"/*
-            done
-            log "ERROR: cannot download source archive"
-            exit 1
-          }
-
-          ensure_source() {
-            if [ -f "$BUILD_DIR/package.json" ]; then
-              log "use synced source at $BUILD_DIR"
-              return 0
-            fi
-            bootstrap_source
-          }
-
-          npm_install() {
-            cd "$BUILD_DIR"
-            npm config set registry https://registry.npmmirror.com
-            LOCK_HASH="$(md5sum package-lock.json | awk '{print $1}')"
-            if [ -f .npm-ci-hash ] && [ "$(cat .npm-ci-hash)" = "$LOCK_HASH" ] && [ -d node_modules ]; then
-              log "package-lock unchanged, skip npm ci"
-              return 0
-            fi
-            log "npm ci"
-            npm ci
-            echo "$LOCK_HASH" > .npm-ci-hash
-          }
-
-          publish_dist() {
-            cd "$BUILD_DIR"
-            mkdir -p "$DEPLOY_PATH"
-            if rsync -a --delete dist/ "$DEPLOY_PATH/"; then
-              :
-            elif command -v sudo >/dev/null 2>&1 && sudo rsync -a --delete dist/ "$DEPLOY_PATH/"; then
-              log "published via sudo rsync"
-            else
-              log "ERROR: cannot write to $DEPLOY_PATH"
-              exit 1
-            fi
-            log "dist published to $DEPLOY_PATH"
-            du -sh "$DEPLOY_PATH"
-            test -f "$DEPLOY_PATH/index.html"
-          }
-
-          ensure_node
-          ensure_source
-          npm_install
-
-          log "npm run build"
-          cd "$BUILD_DIR"
-          SITE_BASE_URL="$SITE_BASE_URL" npm run build
-
-          log "dist ready"
-          du -sh dist
-          test -f dist/index.html
-          publish_dist
-          log "deploy complete"
-          REMOTE
+          $SSH "$REMOTE" \
+            "BUILD_REPO='${BUILD_REPO}' DEPLOY_PATH='${DEPLOY_PATH}' bash ${BUILD_DIR}/scripts/deploy-on-server.sh publish"
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
