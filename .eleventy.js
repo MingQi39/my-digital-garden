@@ -9,6 +9,7 @@ const { parse } = require("node-html-parser");
 const htmlMinifier = require("html-minifier-terser");
 const pluginRss = require("@11ty/eleventy-plugin-rss");
 const { globSync } = require("glob");
+const path = require("path");
 
 const { headerToId, namedHeadingsFilter } = require("./src/helpers/utils");
 const {
@@ -132,8 +133,6 @@ function getAnchorAttributes(filePath, linkTitle) {
   }
 }
 
-const path = require("path");
-
 const tagRegex = /(^|\s|\>)(#[^\s!@#$%^&*()=+\.,\[{\]};:'"?><]+)(?!([^<]*>))/g;
 
 const markdownFileTypeRegex = /\.(md|markdown)$/i;
@@ -228,7 +227,23 @@ function resolveInvalidObsidianDate(dateValue, inputPath) {
   return new Date();
 }
 
+const NOTES_ELEVENTY_DATA_PATH = path.join(
+  __dirname,
+  "src/site/notes/notes.11tydata.js"
+);
+const NOTES_ELEVENTY_DATA_SOURCE = `const { getNotesDirectoryData } = require("../../helpers/notesEleventyData");
+
+module.exports = getNotesDirectoryData();
+`;
+
 module.exports = function(eleventyConfig) {
+  // Obsidian 同步可能删掉 notes/notes.11tydata.js；构建前自动补回，避免笔记失去 layout
+  eleventyConfig.on("eleventy.before", () => {
+    if (!fs.existsSync(NOTES_ELEVENTY_DATA_PATH)) {
+      fs.writeFileSync(NOTES_ELEVENTY_DATA_PATH, NOTES_ELEVENTY_DATA_SOURCE, "utf8");
+    }
+  });
+
   // notes 下任意 drawing/ 目录：仅存放 Excalidraw 源稿与导出图，不作为独立笔记页面发布
   //（避免侧边栏、搜索、RSS 出现仅作嵌入用的图稿页；静态资源仍由 passthrough 复制）
   eleventyConfig.ignores.add("src/site/notes/**/drawing/**/*.md");
@@ -241,7 +256,7 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.ignores.add("src/site/notes/**/AGENTS.md");
   eleventyConfig.ignores.add("src/site/notes/**/AI_CONFIG.md");
 
-  // 侧边栏 / 搜索 / RSS 依赖 collections.note；Obsidian 同步可能删掉 notes.11tydata.js，此处兜底
+  // 侧边栏 / 搜索 / RSS 依赖 collections.note
   eleventyConfig.addCollection("note", (collectionApi) => {
     return collectionApi.getAllSorted().filter((item) =>
       isNoteTemplate(item.inputPath)
