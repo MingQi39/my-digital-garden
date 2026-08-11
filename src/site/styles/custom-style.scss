@@ -46,6 +46,8 @@ body {
 
 // 侧边栏收起时的宽度（展示 Qi Logo + 主题切换）
 $filetree-collapsed-width: 44px;
+// 中等视口右侧 TOC 栏宽度（1000–1400px 区间）
+$medium-sidebar-width: 300px;
 
 // 侧边栏展开/收起过渡动画
 .filetree-wrapper,
@@ -64,12 +66,72 @@ body .content:not(.canvas-page) {
     overflow-x: auto;
     min-width: 0;
 }
-@media (max-width: 1400px) {
+// 1000–1400px：base 会把右侧栏改为 relative 并放到正文下方，导致 TOC 不可见。
+// 此区间仍保持 fixed 右侧栏，正文填充「文件树 ↔ 目录」之间的空间。
+@media (min-width: 1000px) and (max-width: 1400px) {
+    .sidebar {
+        position: fixed !important;
+        left: auto !important;
+        right: 16px !important;
+        top: var(--dg-sidebar-top) !important;
+        transform: none;
+        margin: 0 !important;
+        max-width: $medium-sidebar-width !important;
+        width: $medium-sidebar-width;
+        height: auto;
+        max-height: calc(100vh - var(--dg-sidebar-top) - 16px);
+        padding: 0;
+        border-top: none;
+        justify-content: flex-start;
+        box-sizing: border-box;
+    }
+
+    .sidebar-container {
+        flex-direction: column !important;
+        gap: 12px;
+        height: auto;
+        max-height: calc(100vh - var(--dg-sidebar-top) - 16px);
+        overflow-y: auto;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    // base 在 1400px 隐藏 TOC；阅读站保留目录并参与 scroll spy
+    .sidebar-container .toc {
+        display: flex !important;
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
+    }
+
+    // 中等视口优先展示目录，隐藏图谱以节省水平空间
+    .sidebar .graph,
+    .sidebar #graph-component {
+        display: none !important;
+    }
+
+    .backlinks {
+        min-width: 0;
+    }
+
+    body .content:not(.canvas-page) {
+        margin-left: calc(var(--dg-filetree-min-width) + var(--dg-filetree-gap)) !important;
+        margin-right: calc(#{$medium-sidebar-width} + 24px) !important;
+        max-width: none !important;
+        width: auto;
+    }
+
+    body.filetree-collapsed .content:not(.canvas-page) {
+        margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
+    }
+}
+
+// ≤999px：窄屏沿用 base 的底部横向侧栏
+@media (max-width: 999px) {
     body .content:not(.canvas-page) {
         max-width: var(--dg-content-max-width) !important;
     }
 
-    // base 在 1400px 隐藏 TOC；阅读站保留目录并参与 scroll spy
     .sidebar-container .toc {
         display: flex !important;
         flex: 1 1 280px;
@@ -77,8 +139,6 @@ body .content:not(.canvas-page) {
         max-width: 360px;
     }
 
-    // base 在 1400px 断点硬编码 margin-left:270px / max-width:calc(100vw - 300px)，
-    // 对应默认 250px 文件树；加宽后需用 CSS 变量对齐，避免图谱/backlinks 侵入左侧文件树
     .sidebar {
         margin-left: calc(var(--dg-filetree-width) + 20px) !important;
         max-width: calc(100vw - var(--dg-filetree-width) - 50px);
@@ -100,13 +160,18 @@ body .content:not(.canvas-page) {
     .backlinks {
         min-width: 0;
     }
-}
 
-@media (max-width: 1400px) {
     body.filetree-collapsed {
+        --dg-content-max-width: calc(100vw - #{$filetree-collapsed-width} - 50px);
+
         .sidebar {
             margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
             max-width: calc(100vw - #{$filetree-collapsed-width} - 50px);
+        }
+
+        .content {
+            margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
+            max-width: var(--dg-content-max-width) !important;
         }
     }
 }
@@ -193,7 +258,7 @@ body.filetree-collapsed {
     }
 }
 
-// 仅宽屏 fixed 右侧栏需要重算 left；≤1400px 已改为 relative + left:auto
+// 仅宽屏 fixed 右侧栏需要重算 left；1000–1400px 由上方 medium 断点处理
 @media (min-width: 1401px) {
     body.filetree-collapsed {
         .filetree-wrapper {
@@ -237,19 +302,6 @@ body.filetree-collapsed {
     .filetree-wrapper.is-collapsed {
         width: $filetree-collapsed-width !important;
         min-width: $filetree-collapsed-width !important;
-    }
-    body.filetree-collapsed {
-        // 此断点右侧栏已改为文档流布局且 TOC 隐藏，正文可吃满剩余宽度
-        --dg-content-max-width: calc(100vw - #{$filetree-collapsed-width} - 50px);
-
-        .content {
-            margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
-            max-width: var(--dg-content-max-width) !important;
-        }
-        .content.canvas-page {
-            margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
-            max-width: none !important;
-        }
     }
 }
 
