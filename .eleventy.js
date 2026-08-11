@@ -3,7 +3,7 @@ const markdownIt = require("markdown-it");
 const fs = require("fs");
 const matter = require("gray-matter");
 const crypto = require("crypto");
-const faviconsPlugin = require("eleventy-plugin-gen-favicons");
+const faviconsGen = require("eleventy-plugin-gen-favicons/favicon-gen");
 const tocPlugin = require("eleventy-plugin-nesting-toc");
 const { parse } = require("node-html-parser");
 const htmlMinifier = require("html-minifier-terser");
@@ -216,10 +216,18 @@ module.exports = getNotesDirectoryData();
 
 module.exports = function(eleventyConfig) {
   // Obsidian 同步可能删掉 notes/notes.11tydata.js；构建前自动补回，避免笔记失去 layout
-  eleventyConfig.on("eleventy.before", () => {
+  eleventyConfig.on("eleventy.before", async () => {
     if (!fs.existsSync(NOTES_ELEVENTY_DATA_PATH)) {
       fs.writeFileSync(NOTES_ELEVENTY_DATA_PATH, NOTES_ELEVENTY_DATA_SOURCE, "utf8");
     }
+    if (!fs.existsSync("dist")) {
+      fs.mkdirSync("dist", { recursive: true });
+    }
+    await faviconsGen("./src/site/logo.png", "dist", {
+      appleIconBgColor: "#0a0a0a",
+      skipCache: true,
+      manifestData: { name: process.env.SITE_NAME_HEADER || "侯明琦的个人网站" },
+    });
   });
 
   // notes 下任意 drawing/ 目录：仅存放 Excalidraw 源稿与导出图，不作为独立笔记页面发布
@@ -850,6 +858,12 @@ module.exports = function(eleventyConfig) {
   // passthrough 会复制 notes 下全部文件；构建后清理 dist/notes 中不应公开访问的源稿与杂项
   eleventyConfig.on("eleventy.after", () => {
     try {
+      const staleIco = path.join(process.cwd(), "dist/favicon.ico");
+      if (fs.existsSync(staleIco)) fs.unlinkSync(staleIco);
+    } catch {
+      // ignore
+    }
+    try {
       const distNotes = path.join(process.cwd(), "dist/notes");
       if (!fs.existsSync(distNotes)) return;
       const removePatterns = [
@@ -875,7 +889,6 @@ module.exports = function(eleventyConfig) {
   });
   eleventyConfig.addPassthroughCopy("src/site/styles/_theme.*.css");
   eleventyConfig.addPassthroughCopy({ "src/site/logo.*": "/" });
-  eleventyConfig.addPlugin(faviconsPlugin, { outputDir: "dist" });
   eleventyConfig.addPlugin(tocPlugin, {
     ul: true,
     tags: ["h1", "h2", "h3", "h4", "h5", "h6"],
