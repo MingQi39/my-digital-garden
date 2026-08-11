@@ -36,8 +36,9 @@ jobs:
             -o StrictHostKeyChecking=accept-new \
             -o IdentitiesOnly=yes \
             -o ConnectTimeout=30 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=8"
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=120 \
+            -o TCPKeepAlive=yes"
           SSH="ssh ${SSH_OPTS}"
           RSYNC_SSH="ssh ${SSH_OPTS}"
           REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
@@ -72,8 +73,9 @@ jobs:
             -o StrictHostKeyChecking=accept-new \
             -o IdentitiesOnly=yes \
             -o ConnectTimeout=30 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=8"
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=120 \
+            -o TCPKeepAlive=yes"
 
           REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
           BUILD_DIR="\$HOME/${BUILD_REPO}"
@@ -96,8 +98,9 @@ jobs:
             -o StrictHostKeyChecking=accept-new \
             -o IdentitiesOnly=yes \
             -o ConnectTimeout=30 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=8"
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=120 \
+            -o TCPKeepAlive=yes"
 
           REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
           BUILD_DIR="\$HOME/${BUILD_REPO}"

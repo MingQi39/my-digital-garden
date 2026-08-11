@@ -87,11 +87,13 @@ build_site() {
   cd "$BUILD_DIR"
   log "npm run build (full log: $LOG_FILE)"
   : > "$LOG_FILE"
-  if ! SITE_BASE_URL="$SITE_BASE_URL" npm run build >>"$LOG_FILE" 2>&1; then
+  set -o pipefail
+  if ! SITE_BASE_URL="$SITE_BASE_URL" npm run build 2>&1 | tee "$LOG_FILE"; then
     log "ERROR: npm run build failed"
     tail -n 80 "$LOG_FILE" || true
     exit 1
   fi
+  set +o pipefail
   tail -n 30 "$LOG_FILE" || true
   if [ ! -f dist/index.html ]; then
     log "ERROR: dist/index.html missing after build"
