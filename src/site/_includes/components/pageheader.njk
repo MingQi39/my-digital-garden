@@ -33,9 +33,10 @@
 {% else %}
     <link href="/styles/style.css" rel="stylesheet">
 {%endif%}
-<link href="/styles/digital-garden-base.css" rel="stylesheet">
+{% set assetVer = meta.buildDate | isoDate %}
+<link href="/styles/digital-garden-base.css?v={{ assetVer }}" rel="stylesheet">
 
-<link href="/styles/custom-style.css" rel="stylesheet">
+<link href="/styles/custom-style.css?v={{ assetVer }}" rel="stylesheet">
 {%- for style in dynamics.styles -%}
 <link href="{{style}}?v={{meta.buildDate|isoDate}}" rel="stylesheet">
 {%- endfor -%}

@@ -123,6 +123,7 @@ body .content:not(.canvas-page) {
 
     body.filetree-collapsed .content:not(.canvas-page) {
         margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
+        max-width: none !important;
     }
 }
 
@@ -248,18 +249,19 @@ body.filetree-collapsed {
         100vw - #{$filetree-collapsed-width} - var(--dg-sidebar-max-width) - var(--dg-sidebar-gap) - 60px
     );
 
-    .content {
-        margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
-        max-width: var(--dg-content-max-width) !important;
-    }
     .content.canvas-page {
         margin-left: calc(#{$filetree-collapsed-width} + 16px) !important;
         max-width: none !important;
     }
 }
 
-// 仅宽屏 fixed 右侧栏需要重算 left；1000–1400px 由上方 medium 断点处理
+// 宽屏 fixed 右侧栏；1000–1400px 由上方 medium 断点处理
 @media (min-width: 1401px) {
+    .sidebar {
+        left: auto !important;
+        right: 16px !important;
+    }
+
     body.filetree-collapsed {
         .filetree-wrapper {
             width: $filetree-collapsed-width !important;
@@ -272,6 +274,7 @@ body.filetree-collapsed {
             max-width: calc(
                 100vw - #{$filetree-collapsed-width} - var(--dg-sidebar-max-width) - var(--dg-sidebar-gap) - 40px
             ) !important;
+            margin-right: calc(var(--dg-sidebar-max-width) + 24px) !important;
         }
     }
 
@@ -287,13 +290,8 @@ body.filetree-collapsed {
                     )
                 )
             ) !important;
+            margin-right: calc(var(--dg-sidebar-max-width) + 24px) !important;
         }
-    }
-
-    body.filetree-collapsed .sidebar {
-        left: calc(
-            #{$filetree-collapsed-width} + 16px + var(--dg-content-max-width) + var(--dg-sidebar-gap)
-        ) !important;
     }
 }
 
