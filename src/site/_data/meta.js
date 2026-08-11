@@ -1,12 +1,17 @@
 require("dotenv").config();
+const fs = require("fs");
 const { globSync } = require("glob");
+
+const COMMITTED_THEME = "src/site/styles/_theme.d92311c2.css";
 
 module.exports = async (data) => {
   let baseUrl = process.env.SITE_BASE_URL || "";
   if (baseUrl && !baseUrl.startsWith("http")) {
     baseUrl = "https://" + baseUrl;
   }
-  let themeStyle = globSync("src/site/styles/_theme.*.css")[0] || "";
+  let themeStyle =
+    globSync("src/site/styles/_theme.*.css")[0] ||
+    (fs.existsSync(COMMITTED_THEME) ? COMMITTED_THEME : "");
 
   // Check for logo file (supports multiple image formats)
   const logoFiles = globSync("src/site/logo.{png,jpg,jpeg,gif,svg,webp}");

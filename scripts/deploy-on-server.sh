@@ -98,6 +98,14 @@ build_site() {
     exit 1
   fi
   log "dist ready: $(du -sh dist | awk '{print $1}')"
+  if ! compgen -G "$BUILD_DIR/dist/styles/_theme.*.css" > /dev/null; then
+    log "ERROR: dist/styles/_theme.*.css missing; Obsidian theme was not built"
+    exit 1
+  fi
+  if [ ! -f dist/styles/obsidian-base.css ]; then
+    log "ERROR: dist/styles/obsidian-base.css missing after build"
+    exit 1
+  fi
 }
 
 publish_dist() {
