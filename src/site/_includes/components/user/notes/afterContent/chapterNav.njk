@@ -1,0 +1,21 @@
+{% set noteNav = "" | getNoteNav %}
+{% if noteNav and (noteNav.prev or noteNav.next) %}
+<nav class="dg-chapter-nav" aria-label="章节导航">
+  {% if noteNav.prev %}
+  <a class="dg-chapter-nav-link dg-chapter-nav-prev" href="{{ noteNav.prev.permalink }}">
+    <span class="dg-chapter-nav-label">上一章</span>
+    <span class="dg-chapter-nav-title">{{ noteNav.prev.name }}</span>
+  </a>
+  {% else %}
+  <span class="dg-chapter-nav-link dg-chapter-nav-prev is-empty"></span>
+  {% endif %}
+  {% if noteNav.next %}
+  <a class="dg-chapter-nav-link dg-chapter-nav-next" href="{{ noteNav.next.permalink }}">
+    <span class="dg-chapter-nav-label">下一章</span>
+    <span class="dg-chapter-nav-title">{{ noteNav.next.name }}</span>
+  </a>
+  {% else %}
+  <span class="dg-chapter-nav-link dg-chapter-nav-next is-empty"></span>
+  {% endif %}
+</nav>
+{% endif %}

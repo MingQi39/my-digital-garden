@@ -3,8 +3,14 @@ function userMarkdownSetup(md) {
   // Feel free to add any plugin you want here instead of /.eleventy.js
 }
 function userEleventySetup(eleventyConfig) {
-  // The eleventyConfig parameter stands for the the config instantiated in /.eleventy.js.
-  // Feel free to add any plugin you want here instead of /.eleventy.js
+  const { getNoteNavigation } = require("./filetreeUtils");
+  eleventyConfig.addFilter("getNoteNav", function () {
+    const ctx = this.ctx || this;
+    return getNoteNavigation({
+      page: ctx.page,
+      collections: ctx.collections,
+    });
+  });
 }
 exports.userMarkdownSetup = userMarkdownSetup;
 exports.userEleventySetup = userEleventySetup;

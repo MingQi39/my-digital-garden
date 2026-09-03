@@ -160,4 +160,76 @@ function getFileTree(data) {
   return fileTree;
 }
 
+function normalizePermalink(url) {
+  if (!url || typeof url !== "string") return "/";
+  let permalink = url;
+  if (!permalink.startsWith("/")) permalink = "/" + permalink;
+  if (permalink !== "/" && !permalink.endsWith("/")) permalink += "/";
+  return permalink;
+}
+
+function compareNoteEntries(a, b) {
+  if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+  return naturalCompare(a.sortKey, b.sortKey);
+}
+
+function getNoteNavigation(data) {
+  const page = data.page;
+  if (!page || !page.url) return { prev: null, next: null };
+
+  const currentUrl = normalizePermalink(page.url);
+  if (currentUrl === "/") return { prev: null, next: null };
+
+  const notes = (data.collections && data.collections.note) || [];
+  const currentNote = notes.find((note) => {
+    const [meta] = getPermalinkMeta(note);
+    return normalizePermalink(meta.permalink) === currentUrl;
+  });
+  if (!currentNote) return { prev: null, next: null };
+
+  const [, currentFolders] = getPermalinkMeta(currentNote);
+  if (!currentFolders || currentFolders.length < 2) {
+    return { prev: null, next: null };
+  }
+
+  const parentPrefix = currentFolders.slice(0, -1).join("/");
+  const siblings = notes
+    .filter((note) => {
+      const [meta, folders] = getPermalinkMeta(note);
+      if (meta.hide || !folders || folders.length !== currentFolders.length) {
+        return false;
+      }
+      return folders.slice(0, -1).join("/") === parentPrefix;
+    })
+    .map((note) => {
+      const [meta, folders] = getPermalinkMeta(note);
+      return {
+        permalink: normalizePermalink(meta.permalink),
+        name: meta.name,
+        noteIcon: meta.noteIcon,
+        pinned: meta.pinned,
+        sortKey: folders[folders.length - 1],
+      };
+    })
+    .sort(compareNoteEntries);
+
+  const idx = siblings.findIndex((item) => item.permalink === currentUrl);
+  if (idx === -1) return { prev: null, next: null };
+
+  const pick = (item) =>
+    item
+      ? {
+          permalink: item.permalink,
+          name: item.name,
+          noteIcon: item.noteIcon,
+        }
+      : null;
+
+  return {
+    prev: pick(siblings[idx - 1]),
+    next: pick(siblings[idx + 1]),
+  };
+}
+
 exports.getFileTree = getFileTree;
+exports.getNoteNavigation = getNoteNavigation;

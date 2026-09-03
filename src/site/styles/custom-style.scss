@@ -606,3 +606,86 @@ body.dg-lightbox-open {
         right: 12px;
     }
 }
+
+// 上一章 / 下一章导航
+.dg-chapter-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--background-modifier-border, rgba(127, 127, 127, 0.35));
+}
+
+.dg-chapter-nav-link {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    border: 1px solid var(--background-modifier-border, rgba(127, 127, 127, 0.35));
+    border-radius: 10px;
+    background: var(--background-secondary, rgba(127, 127, 127, 0.06));
+    color: var(--text-normal);
+    text-decoration: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+
+    &:hover {
+        border-color: var(--dg-reading-progress-color, #e07a5f);
+        background: var(--background-primary);
+        color: var(--text-normal);
+        text-decoration: none;
+    }
+
+    &.is-empty {
+        visibility: hidden;
+        pointer-events: none;
+    }
+}
+
+.dg-chapter-nav-prev {
+    align-items: flex-start;
+    text-align: left;
+}
+
+.dg-chapter-nav-next {
+    align-items: flex-end;
+    text-align: right;
+}
+
+.dg-chapter-nav-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.dg-chapter-nav-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--text-normal);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+@media (max-width: 700px) {
+    .dg-chapter-nav {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .dg-chapter-nav-link.is-empty {
+        display: none;
+    }
+
+    .dg-chapter-nav-next {
+        align-items: flex-start;
+        text-align: left;
+    }
+}
